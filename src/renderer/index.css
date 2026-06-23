@@ -36,8 +36,16 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 0;
+  /* Extra top padding clears the macOS traffic lights (hiddenInset title bar). */
+  padding: 40px 0 10px;
   gap: 10px;
+  /* The sidebar top doubles as a draggable title-bar region. */
+  -webkit-app-region: drag;
+}
+
+.sidebar .account-slot,
+.sidebar .sidebar__add {
+  -webkit-app-region: no-drag;
 }
 
 .sidebar__brand {
@@ -142,6 +150,13 @@ body {
   padding: 0 8px;
   background: var(--sidebar-bg);
   border-bottom: 1px solid #2a2d34;
+  /* Empty areas of the top bar drag the window; controls opt out below. */
+  -webkit-app-region: drag;
+}
+
+.topbar__btn,
+.topbar__address {
+  -webkit-app-region: no-drag;
 }
 
 .topbar__btn {
