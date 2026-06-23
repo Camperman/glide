@@ -85,6 +85,10 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Polish — ✅ Page zoom.** Cmd +/-/0 (via the View menu, so they fire even when
+  a page has focus) zoom the active content. Zoom is app-wide (applied to every
+  open tab and reapplied on each tab's load), clamped 30%–300%, and persisted
+  (`PersistedState.zoomFactor`). guard + build + smoke + isolation pass.
 - **Phase 11 — ✅ General browser tabs.** Decoupled tabs from shortcuts: tabs are
   now id-based (`Tab` has its own id + title + optional `originShortcutId`), held
   in an ordered list per account. Added a real **tab strip in the title bar**

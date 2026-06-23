@@ -133,6 +133,8 @@ export class AccountManager {
   private order: string[] = []
   private activeId?: string
   private overlayOpen = false
+  // App-wide page zoom, applied to every tab and persisted across restarts.
+  private zoomFactor = 1
 
   constructor(win: BrowserWindow, onState?: () => void) {
     this.win = win
@@ -184,6 +186,7 @@ export class AccountManager {
       this.activeId === account.config.id && account.activeTabId === tab.id
 
     wc.on('did-finish-load', () => {
+      wc.setZoomFactor(this.zoomFactor)
       this.extractAvatar(account, wc)
       setTimeout(() => this.extractAvatar(account, wc), 2000)
     })
@@ -363,6 +366,31 @@ export class AccountManager {
   setOverlayOpen(open: boolean): void {
     this.overlayOpen = open
     this.refreshVisibility()
+  }
+
+  getZoom(): number {
+    return this.zoomFactor
+  }
+
+  /** Set app-wide page zoom (clamped 30%–300%) and apply to every open tab. */
+  setZoom(factor: number): void {
+    this.zoomFactor = Math.round(Math.min(3, Math.max(0.3, factor)) * 100) / 100
+    for (const account of this.accounts.values()) {
+      for (const tab of account.tabs) tab.view.webContents.setZoomFactor(this.zoomFactor)
+    }
+    this.onState?.()
+  }
+
+  zoomIn(): void {
+    this.setZoom(this.zoomFactor + 0.1)
+  }
+
+  zoomOut(): void {
+    this.setZoom(this.zoomFactor - 0.1)
+  }
+
+  zoomReset(): void {
+    this.setZoom(1)
   }
 
   /** Show only the active account's active tab; keep all others alive but hidden. */

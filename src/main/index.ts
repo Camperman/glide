@@ -23,7 +23,8 @@ function buildState(): PersistedState {
     activeAccountId: accounts?.getActiveId() ?? state.activeAccountId,
     window: bounds
       ? { width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y }
-      : state.window
+      : state.window,
+    zoomFactor: accounts?.getZoom() ?? state.zoomFactor
   }
 }
 
@@ -90,8 +91,14 @@ function createWindow(): void {
   accounts.load(configs)
 
   if (state.activeAccountId) accounts.setActive(state.activeAccountId)
+  if (state.zoomFactor) accounts.setZoom(state.zoomFactor)
 
-  buildAppMenu((index) => accounts?.setActiveByIndex(index))
+  buildAppMenu({
+    switchToIndex: (index) => accounts?.setActiveByIndex(index),
+    zoomIn: () => accounts?.zoomIn(),
+    zoomOut: () => accounts?.zoomOut(),
+    zoomReset: () => accounts?.zoomReset()
+  })
 }
 
 app.whenReady().then(() => {

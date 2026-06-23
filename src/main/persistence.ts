@@ -27,6 +27,7 @@ export interface PersistedState {
   accounts: PersistedAccount[]
   activeAccountId?: string
   window?: WindowBounds
+  zoomFactor?: number
 }
 
 const DEFAULT_ACCOUNTS: PersistedAccount[] = [
