@@ -50,6 +50,23 @@ const api: GlideApi = {
     ipcRenderer.on('shortcuts:updated', listener)
     return () => ipcRenderer.removeListener('shortcuts:updated', listener)
   },
+  showAccountMenu: (accountId) => ipcRenderer.invoke('menu:account', accountId),
+  showShortcutMenu: (accountId, shortcutId) =>
+    ipcRenderer.invoke('menu:shortcut', accountId, shortcutId),
+  setOverlay: (open) => ipcRenderer.invoke('chrome:overlay', open),
+  onEditAccount: (cb) => {
+    const listener = (_event: unknown, accountId: string): void => cb(accountId)
+    ipcRenderer.on('menu:edit-account', listener)
+    return () => ipcRenderer.removeListener('menu:edit-account', listener)
+  },
+  onEditShortcut: (cb) => {
+    const listener = (
+      _event: unknown,
+      update: { accountId: string; shortcutId: string }
+    ): void => cb(update)
+    ipcRenderer.on('menu:edit-shortcut', listener)
+    return () => ipcRenderer.removeListener('menu:edit-shortcut', listener)
+  },
   __test: {
     partitions: () => ipcRenderer.invoke('__test:partitions'),
     setCookie: (arg) => ipcRenderer.invoke('__test:set-cookie', arg),

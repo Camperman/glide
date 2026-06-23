@@ -71,6 +71,16 @@ export interface GlideApi {
   removeShortcut(accountId: string, shortcutId: string): Promise<void>
   /** Subscribe to a profile's shortcut list changing. Returns an unsubscribe fn. */
   onShortcutsUpdated(cb: (update: { accountId: string; shortcuts: Shortcut[] }) => void): () => void
+  /** Open the native right-click menu for an account (floats above the web view). */
+  showAccountMenu(accountId: string): Promise<void>
+  /** Open the native right-click menu for a shortcut. */
+  showShortcutMenu(accountId: string, shortcutId: string): Promise<void>
+  /** Tell main a DOM modal is open/closed so it can hide/show the web view. */
+  setOverlay(open: boolean): Promise<void>
+  /** Native "Edit" chosen for an account. Returns an unsubscribe fn. */
+  onEditAccount(cb: (accountId: string) => void): () => void
+  /** Native "Edit" chosen for a shortcut. Returns an unsubscribe fn. */
+  onEditShortcut(cb: (update: { accountId: string; shortcutId: string }) => void): () => void
   /** Subscribe to active-account changes pushed from main. Returns an unsubscribe fn. */
   onActiveChanged(cb: (id: string) => void): () => void
   /** Subscribe to the account list changing (add/edit/remove). Returns an unsubscribe fn. */

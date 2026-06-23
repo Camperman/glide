@@ -47,6 +47,14 @@ export function registerIpc(accounts: AccountManager): void {
     accounts.removeShortcut(accountId, shortcutId)
   )
 
+  ipcMain.handle('menu:account', (_event, accountId: string) =>
+    accounts.popupAccountMenu(accountId)
+  )
+  ipcMain.handle('menu:shortcut', (_event, accountId: string, shortcutId: string) =>
+    accounts.popupShortcutMenu(accountId, shortcutId)
+  )
+  ipcMain.handle('chrome:overlay', (_event, open: boolean) => accounts.setOverlayOpen(open))
+
   ipcMain.handle('__test:partitions', () => accounts.partitions())
 
   ipcMain.handle(

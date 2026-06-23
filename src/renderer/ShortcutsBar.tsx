@@ -5,7 +5,7 @@ interface ShortcutsBarProps {
   disabled: boolean
   onOpen: (url: string) => void
   onAdd: () => void
-  onContextMenu: (shortcutId: string, x: number, y: number) => void
+  onContextMenu: (shortcutId: string) => void
 }
 
 // Per-profile quick-launch row. Clicking a pill navigates the active account's
@@ -31,7 +31,7 @@ export function ShortcutsBar({
           onClick={() => onOpen(shortcut.url)}
           onContextMenu={(e) => {
             e.preventDefault()
-            onContextMenu(shortcut.id, e.clientX, e.clientY)
+            onContextMenu(shortcut.id)
           }}
         >
           {shortcut.label}

@@ -82,6 +82,14 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Fix — ✅ Overlay layering.** A native `WebContentsView` always paints above
+  the HTML UI, so DOM context menus/modals appeared *behind* the Gmail pane.
+  Fixed structurally: (1) right-click menus for accounts and shortcuts are now
+  native Electron `Menu.popup()` menus (float above the web view; "Edit" routes
+  back to the renderer, "Remove" runs in main); (2) while any modal dialog is
+  open the renderer calls `setOverlay(true)`, which hides the active web view so
+  the dialog is fully visible, restored on close. Removed the DOM context-menu
+  code. guard + build + smoke + isolation pass.
 - **Phase 9 — ✅ Per-profile shortcuts bar.** A second chrome strip
   (`ShortcutsBar.tsx`, 40px, `SHORTCUTS_BAR_HEIGHT`) under the address bar shows
   the ACTIVE profile's shortcuts as pills; clicking one navigates that profile's

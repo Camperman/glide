@@ -12,12 +12,6 @@ interface DialogState {
   initial: DialogValues
 }
 
-interface MenuState {
-  id: string
-  x: number
-  y: number
-}
-
 interface ShortcutDialogState {
   mode: 'add' | 'edit'
   shortcutId?: string
@@ -30,11 +24,9 @@ export function App(): JSX.Element {
   const [accounts, setAccounts] = useState<AccountSummary[]>([])
   const [activeId, setActiveId] = useState<string | undefined>()
   const [dialog, setDialog] = useState<DialogState | null>(null)
-  const [menu, setMenu] = useState<MenuState | null>(null)
   const [nav, setNav] = useState<NavState | null>(null)
   const [unread, setUnread] = useState<Record<string, number>>({})
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([])
-  const [shortcutMenu, setShortcutMenu] = useState<MenuState | null>(null)
   const [shortcutDialog, setShortcutDialog] = useState<ShortcutDialogState | null>(null)
 
   useEffect(() => {
@@ -59,13 +51,20 @@ export function App(): JSX.Element {
         current && next.some((a) => a.id === current) ? current : next[0]?.id
       )
     })
+    const offEditAccount = window.glide.onEditAccount((id) => openEdit(id))
+    const offEditShortcut = window.glide.onEditShortcut(({ shortcutId }) =>
+      openEditShortcut(shortcutId)
+    )
     return () => {
       offActive()
       offNav()
       offUnread()
       offShortcuts()
       offList()
+      offEditAccount()
+      offEditShortcut()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Load the active profile's shortcuts whenever the active account changes.
@@ -73,6 +72,12 @@ export function App(): JSX.Element {
     if (activeId) void window.glide.getShortcuts(activeId).then(setShortcuts)
     else setShortcuts([])
   }, [activeId])
+
+  // A native view paints above DOM, so hide the active web view while a modal
+  // is open and restore it when the modal closes.
+  useEffect(() => {
+    void window.glide.setOverlay(Boolean(dialog || shortcutDialog))
+  }, [dialog, shortcutDialog])
 
   const handleSelect = (id: string): void => {
     setActiveId(id)
@@ -96,33 +101,31 @@ export function App(): JSX.Element {
     setDialog({ mode: 'add', initial: { label: '', color: '#4c8bf5', homeUrl: DEFAULT_HOME } })
 
   const openEdit = (id: string): void => {
-    const account = accounts.find((a) => a.id === id)
-    if (!account) return
-    setDialog({
-      mode: 'edit',
-      id,
-      initial: { label: account.label, color: account.color, homeUrl: DEFAULT_HOME }
+    void window.glide.listAccounts().then((list) => {
+      const account = list.find((a) => a.id === id)
+      if (!account) return
+      setDialog({
+        mode: 'edit',
+        id,
+        initial: { label: account.label, color: account.color, homeUrl: DEFAULT_HOME }
+      })
     })
-    setMenu(null)
-  }
-
-  const handleRemove = (id: string): void => {
-    void window.glide.removeAccount(id)
-    setMenu(null)
   }
 
   const openAddShortcut = (): void =>
     setShortcutDialog({ mode: 'add', initial: { label: '', url: 'https://' } })
 
   const openEditShortcut = (shortcutId: string): void => {
-    const shortcut = shortcuts.find((s) => s.id === shortcutId)
-    if (!shortcut) return
-    setShortcutDialog({
-      mode: 'edit',
-      shortcutId,
-      initial: { label: shortcut.label, url: shortcut.url }
+    if (!activeId) return
+    void window.glide.getShortcuts(activeId).then((list) => {
+      const shortcut = list.find((s) => s.id === shortcutId)
+      if (!shortcut) return
+      setShortcutDialog({
+        mode: 'edit',
+        shortcutId,
+        initial: { label: shortcut.label, url: shortcut.url }
+      })
     })
-    setShortcutMenu(null)
   }
 
   const handleShortcutSubmit = (values: ShortcutValues): void => {
@@ -135,25 +138,15 @@ export function App(): JSX.Element {
     setShortcutDialog(null)
   }
 
-  const handleRemoveShortcut = (shortcutId: string): void => {
-    if (activeId) void window.glide.removeShortcut(activeId, shortcutId)
-    setShortcutMenu(null)
-  }
-
-  const closeMenus = (): void => {
-    setMenu(null)
-    setShortcutMenu(null)
-  }
-
   return (
-    <div className="app" onClick={closeMenus}>
+    <div className="app">
       <Sidebar
         accounts={accounts}
         activeId={activeId}
         unread={unread}
         onSelect={handleSelect}
         onAdd={openAdd}
-        onContextMenu={(id, x, y) => setMenu({ id, x, y })}
+        onContextMenu={(id) => void window.glide.showAccountMenu(id)}
       />
 
       <div className="main-col">
@@ -169,7 +162,9 @@ export function App(): JSX.Element {
           disabled={!activeId}
           onOpen={(url) => void window.glide.navigate(url)}
           onAdd={openAddShortcut}
-          onContextMenu={(id, x, y) => setShortcutMenu({ id, x, y })}
+          onContextMenu={(shortcutId) => {
+            if (activeId) void window.glide.showShortcutMenu(activeId, shortcutId)
+          }}
         />
         <main className="content" data-testid="content">
           {accounts.length === 0 && (
@@ -180,40 +175,6 @@ export function App(): JSX.Element {
           )}
         </main>
       </div>
-
-      {menu && (
-        <div
-          className="context-menu"
-          style={{ left: menu.x, top: menu.y }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button type="button" onClick={() => openEdit(menu.id)}>
-            Edit
-          </button>
-          <button type="button" className="context-menu__danger" onClick={() => handleRemove(menu.id)}>
-            Remove
-          </button>
-        </div>
-      )}
-
-      {shortcutMenu && (
-        <div
-          className="context-menu"
-          style={{ left: shortcutMenu.x, top: shortcutMenu.y }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button type="button" onClick={() => openEditShortcut(shortcutMenu.id)}>
-            Edit
-          </button>
-          <button
-            type="button"
-            className="context-menu__danger"
-            onClick={() => handleRemoveShortcut(shortcutMenu.id)}
-          >
-            Remove
-          </button>
-        </div>
-      )}
 
       {dialog && (
         <AccountDialog

@@ -7,7 +7,7 @@ interface SidebarProps {
   unread: Record<string, number>
   onSelect: (id: string) => void
   onAdd: () => void
-  onContextMenu: (id: string, x: number, y: number) => void
+  onContextMenu: (id: string) => void
 }
 
 // Left rail of account avatars with unread badges. Click switches; right-click
@@ -40,7 +40,7 @@ export function Sidebar({
                 onClick={() => onSelect(account.id)}
                 onContextMenu={(e) => {
                   e.preventDefault()
-                  onContextMenu(account.id, e.clientX, e.clientY)
+                  onContextMenu(account.id)
                 }}
               >
                 {account.label.charAt(0).toUpperCase()}

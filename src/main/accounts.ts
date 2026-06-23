@@ -1,4 +1,4 @@
-import { BrowserWindow, WebContents, WebContentsView, session } from 'electron'
+import { BrowserWindow, Menu, WebContents, WebContentsView, session } from 'electron'
 import { randomUUID } from 'crypto'
 import type {
   AccountPatch,
@@ -95,6 +95,9 @@ export class AccountManager {
   private readonly views = new Map<string, ManagedView>()
   private order: string[] = []
   private activeId?: string
+  // When a DOM modal is open the renderer asks us to hide the active web view,
+  // since a native WebContentsView always paints above the HTML UI.
+  private overlayOpen = false
 
   constructor(win: BrowserWindow, onState?: () => void) {
     this.win = win
@@ -236,7 +239,7 @@ export class AccountManager {
     if (!this.views.has(id)) return
     this.activeId = id
     for (const [viewId, { view }] of this.views) {
-      view.setVisible(viewId === id)
+      view.setVisible(viewId === id && !this.overlayOpen)
     }
     this.layout()
     if (!this.win.isDestroyed()) {
@@ -254,6 +257,38 @@ export class AccountManager {
   setActiveByIndex(index: number): void {
     const id = this.order[index]
     if (id) this.setActive(id)
+  }
+
+  /** Hide/show the active web view so DOM modals can render above it. */
+  setOverlayOpen(open: boolean): void {
+    this.overlayOpen = open
+    const active = this.activeId ? this.views.get(this.activeId) : undefined
+    active?.view.setVisible(!open)
+  }
+
+  /** Native right-click menu for a sidebar account (floats above the web view). */
+  popupAccountMenu(accountId: string): void {
+    if (!this.views.has(accountId)) return
+    Menu.buildFromTemplate([
+      {
+        label: 'Edit',
+        click: () => this.win.webContents.send('menu:edit-account', accountId)
+      },
+      { type: 'separator' },
+      { label: 'Remove', click: () => void this.removeAccount(accountId) }
+    ]).popup({ window: this.win })
+  }
+
+  /** Native right-click menu for a shortcut pill. */
+  popupShortcutMenu(accountId: string, shortcutId: string): void {
+    Menu.buildFromTemplate([
+      {
+        label: 'Edit',
+        click: () => this.win.webContents.send('menu:edit-shortcut', { accountId, shortcutId })
+      },
+      { type: 'separator' },
+      { label: 'Remove', click: () => this.removeShortcut(accountId, shortcutId) }
+    ]).popup({ window: this.win })
   }
 
   private activeWebContents(): WebContents | undefined {
