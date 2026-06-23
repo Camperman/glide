@@ -25,7 +25,8 @@ function buildState(): PersistedState {
       ? { width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y }
       : state.window,
     zoomFactor: accounts?.getZoom() ?? state.zoomFactor,
-    layout: accounts?.getLayout() ?? state.layout
+    layout: accounts?.getLayout() ?? state.layout,
+    bookmarksBar: accounts?.getBookmarksBarVisible() ?? state.bookmarksBar
   }
 }
 
@@ -39,7 +40,13 @@ function installMenu(): void {
     setLayout: (layout) => {
       accounts?.setLayout(layout)
       installMenu() // rebuild so the radio check reflects the new layout
-    }
+    },
+    bookmarksBar: accounts?.getBookmarksBarVisible() ?? false,
+    toggleBookmarksBar: () => {
+      accounts?.setBookmarksBarVisible(!accounts.getBookmarksBarVisible())
+      installMenu()
+    },
+    importBookmarks: () => mainWindow?.webContents.send('menu:import-bookmarks')
   })
 }
 
@@ -101,13 +108,15 @@ function createWindow(): void {
       lastUrl: a.lastUrl,
       shortcuts: a.shortcuts,
       avatarUrl: a.avatarUrl,
-      activeShortcutId: a.activeShortcutId
+      activeShortcutId: a.activeShortcutId,
+      bookmarks: a.bookmarks
     }))
   accounts.load(configs)
 
   if (state.activeAccountId) accounts.setActive(state.activeAccountId)
   if (state.zoomFactor) accounts.setZoom(state.zoomFactor)
   if (state.layout) accounts.setLayout(state.layout)
+  if (state.bookmarksBar) accounts.setBookmarksBarVisible(true)
 
   installMenu()
 }

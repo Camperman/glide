@@ -37,6 +37,19 @@ export function registerIpc(accounts: AccountManager): void {
   )
   ipcMain.handle('apps:list', (_event, accountId: string) => accounts.getApps(accountId))
   ipcMain.handle('layout:get', () => accounts.getLayout())
+
+  ipcMain.handle('bookmarks:list', (_event, accountId: string) => accounts.getBookmarks(accountId))
+  ipcMain.handle('bookmarks:open', (_event, accountId: string, url: string) =>
+    accounts.openBookmark(accountId, url)
+  )
+  ipcMain.handle('bookmarks:open-folder', (_event, accountId: string, folderId: string) =>
+    accounts.openBookmarkFolder(accountId, folderId)
+  )
+  ipcMain.handle('bookmarks:bar-visible', () => accounts.getBookmarksBarVisible())
+  ipcMain.handle('bookmarks:chrome-profiles', () => accounts.getChromeProfiles())
+  ipcMain.handle('bookmarks:import', (_event, accountId: string, chromeDir: string) =>
+    accounts.importChromeBookmarks(accountId, chromeDir)
+  )
   ipcMain.handle('shortcuts:add', (_event, accountId: string, input: ShortcutInput) =>
     accounts.addShortcut(accountId, input)
   )

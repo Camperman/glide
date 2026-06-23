@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import type { AppRailLayout, Shortcut } from '../shared/types'
+import type { AppRailLayout, BookmarkNode, Shortcut } from '../shared/types'
 
 export interface PersistedAccount {
   id: string
@@ -13,6 +13,7 @@ export interface PersistedAccount {
   shortcuts?: Shortcut[]
   avatarUrl?: string
   activeShortcutId?: string
+  bookmarks?: BookmarkNode[]
 }
 
 export interface WindowBounds {
@@ -29,6 +30,7 @@ export interface PersistedState {
   window?: WindowBounds
   zoomFactor?: number
   layout?: AppRailLayout
+  bookmarksBar?: boolean
 }
 
 const DEFAULT_ACCOUNTS: PersistedAccount[] = [

@@ -452,6 +452,88 @@ body {
   font-size: 15px;
 }
 
+/* Bookmarks bar. Height must match BOOKMARKS_BAR_HEIGHT in accounts.ts. */
+.bookmarksbar {
+  height: 36px;
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--hairline);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.bookmarksbar__empty {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.bm {
+  flex: 0 0 auto;
+  height: 24px;
+  max-width: 200px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bm:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.bm__caret {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+/* Chrome profile picker (import dialog) */
+.modal__hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.chrome-profiles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.chrome-profile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid #3a3e47;
+  border-radius: 6px;
+  background: #1b1d22;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chrome-profile:hover {
+  border-color: var(--accent);
+}
+
+.chrome-profile__count {
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .content {
   flex: 1;
   display: flex;

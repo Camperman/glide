@@ -30,6 +30,34 @@ export interface Shortcut {
 /** Where the app rail is rendered. */
 export type AppRailLayout = 'left' | 'top'
 
+export interface BookmarkLink {
+  type: 'link'
+  id: string
+  title: string
+  url: string
+}
+
+export interface BookmarkFolder {
+  type: 'folder'
+  id: string
+  title: string
+  children: BookmarkNode[]
+}
+
+export type BookmarkNode = BookmarkLink | BookmarkFolder
+
+export interface BookmarksState {
+  accountId: string
+  bookmarks: BookmarkNode[]
+}
+
+/** A Chrome profile available to import bookmarks from. */
+export interface ChromeProfile {
+  dir: string
+  name: string
+  count: number
+}
+
 /** An app as shown in the vertical app rail (a shortcut + live state). */
 export interface AppInfo {
   id: string
@@ -112,6 +140,19 @@ export interface GlideApi {
   getLayout(): Promise<AppRailLayout>
   /** Subscribe to app-rail layout changes (toggled from the View menu). */
   onLayoutChanged(cb: (layout: AppRailLayout) => void): () => void
+  getBookmarks(accountId: string): Promise<BookmarkNode[]>
+  onBookmarksState(cb: (state: BookmarksState) => void): () => void
+  /** Open a bookmark URL in a new tab. */
+  openBookmark(accountId: string, url: string): Promise<void>
+  /** Open a native popup menu for a bookmark folder (handles nested folders). */
+  openBookmarkFolder(accountId: string, folderId: string): Promise<void>
+  getBookmarksBarVisible(): Promise<boolean>
+  onBookmarksBarVisible(cb: (visible: boolean) => void): () => void
+  /** Chrome profiles available to import from. */
+  getChromeProfiles(): Promise<ChromeProfile[]>
+  importChromeBookmarks(accountId: string, chromeDir: string): Promise<void>
+  /** Fired when the user picks Bookmarks → Import from Chrome in the menu. */
+  onImportBookmarks(cb: () => void): () => void
   addShortcut(accountId: string, input: ShortcutInput): Promise<void>
   updateShortcut(accountId: string, shortcutId: string, patch: ShortcutPatch): Promise<void>
   removeShortcut(accountId: string, shortcutId: string): Promise<void>

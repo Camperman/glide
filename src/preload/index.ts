@@ -3,6 +3,7 @@ import type {
   AccountSummary,
   AppRailLayout,
   AppsState,
+  BookmarksState,
   GlideApi,
   NavState,
   Shortcut,
@@ -56,6 +57,29 @@ const api: GlideApi = {
     const listener = (_event: unknown, layout: AppRailLayout): void => cb(layout)
     ipcRenderer.on('layout:changed', listener)
     return () => ipcRenderer.removeListener('layout:changed', listener)
+  },
+  getBookmarks: (accountId) => ipcRenderer.invoke('bookmarks:list', accountId),
+  onBookmarksState: (cb) => {
+    const listener = (_event: unknown, state: BookmarksState): void => cb(state)
+    ipcRenderer.on('bookmarks:state', listener)
+    return () => ipcRenderer.removeListener('bookmarks:state', listener)
+  },
+  openBookmark: (accountId, url) => ipcRenderer.invoke('bookmarks:open', accountId, url),
+  openBookmarkFolder: (accountId, folderId) =>
+    ipcRenderer.invoke('bookmarks:open-folder', accountId, folderId),
+  getBookmarksBarVisible: () => ipcRenderer.invoke('bookmarks:bar-visible'),
+  onBookmarksBarVisible: (cb) => {
+    const listener = (_event: unknown, visible: boolean): void => cb(visible)
+    ipcRenderer.on('bookmarks:visible', listener)
+    return () => ipcRenderer.removeListener('bookmarks:visible', listener)
+  },
+  getChromeProfiles: () => ipcRenderer.invoke('bookmarks:chrome-profiles'),
+  importChromeBookmarks: (accountId, chromeDir) =>
+    ipcRenderer.invoke('bookmarks:import', accountId, chromeDir),
+  onImportBookmarks: (cb) => {
+    const listener = (): void => cb()
+    ipcRenderer.on('menu:import-bookmarks', listener)
+    return () => ipcRenderer.removeListener('menu:import-bookmarks', listener)
   },
   addShortcut: (accountId, input) => ipcRenderer.invoke('shortcuts:add', accountId, input),
   updateShortcut: (accountId, shortcutId, patch) =>

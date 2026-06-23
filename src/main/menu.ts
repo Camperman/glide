@@ -8,6 +8,9 @@ export interface MenuHandlers {
   zoomReset: () => void
   setLayout: (layout: AppRailLayout) => void
   layout: AppRailLayout
+  bookmarksBar: boolean
+  toggleBookmarksBar: () => void
+  importBookmarks: () => void
 }
 
 /**
@@ -52,6 +55,20 @@ export function buildAppMenu(handlers: MenuHandlers): void {
             }
           ]
         }
+      ]
+    },
+    {
+      label: 'Bookmarks',
+      submenu: [
+        {
+          label: 'Show Bookmarks Bar',
+          type: 'checkbox',
+          checked: handlers.bookmarksBar,
+          accelerator: 'CommandOrControl+Shift+B',
+          click: () => handlers.toggleBookmarksBar()
+        },
+        { type: 'separator' },
+        { label: 'Import from Chrome…', click: () => handlers.importBookmarks() }
       ]
     },
     { label: 'Accounts', submenu: accountItems },

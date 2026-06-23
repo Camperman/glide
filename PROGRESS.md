@@ -98,6 +98,19 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Phase 14 — ✅ Bookmarks bar + Chrome import (per profile).** Added a
+  per-profile bookmark tree (`BookmarkNode` = link | folder, persisted on the
+  account) and a **toggleable bookmarks bar** (View/Bookmarks → Show Bookmarks
+  Bar, Cmd-Shift-B; app-wide visibility persisted, reserves `BOOKMARKS_BAR_HEIGHT`
+  so the content offset is now dynamic). Top-level links open in a tab; folders
+  open a **native popup menu** (nested submenus, floats above the web view).
+  **Import from Chrome:** `chromeBookmarks.ts` reads a chosen Chrome profile's
+  plaintext `Bookmarks` JSON (`roots.bookmark_bar`), converts the tree, and
+  replaces the active Glide profile's bookmarks; a picker modal
+  (`ChromeImportDialog`) lists detected Chrome profiles by name + count. New IPC
+  (bookmarks:list/open/open-folder/bar-visible/chrome-profiles/import +
+  bookmarks:state/visible + menu:import-bookmarks). Verified the parser against a
+  real 194-bookmark Chrome profile. guard + build + smoke + isolation pass.
 - **Polish — ✅ Apps no longer duplicate into the tab strip.** App tabs (those
   with an `originShortcutId`) are now filtered out of `getTabs`, so clicking an
   app just switches to it via the app rail instead of also creating a tab-strip

@@ -3,9 +3,18 @@ import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { TabStrip } from './TabStrip'
 import { AppRail } from './AppRail'
+import { BookmarksBar } from './BookmarksBar'
+import { ChromeImportDialog } from './ChromeImportDialog'
 import { AccountDialog, type DialogValues } from './AccountDialog'
 import { ShortcutDialog, type ShortcutValues } from './ShortcutDialog'
-import type { AccountSummary, AppInfo, AppRailLayout, NavState, TabInfo } from '../shared/types'
+import type {
+  AccountSummary,
+  AppInfo,
+  AppRailLayout,
+  BookmarkNode,
+  NavState,
+  TabInfo
+} from '../shared/types'
 
 interface DialogState {
   mode: 'add' | 'edit'
@@ -32,6 +41,9 @@ export function App(): JSX.Element {
   const [shortcutDialog, setShortcutDialog] = useState<ShortcutDialogState | null>(null)
   const [tabs, setTabs] = useState<TabInfo[]>([])
   const [layout, setLayout] = useState<AppRailLayout>('left')
+  const [bookmarks, setBookmarks] = useState<BookmarkNode[]>([])
+  const [bookmarksBar, setBookmarksBar] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   useEffect(() => {
     void window.glide.listAccounts().then(setAccounts)
@@ -39,7 +51,16 @@ export function App(): JSX.Element {
     void window.glide.getNavState().then(setNav)
     void window.glide.getUnread().then(setUnread)
     void window.glide.getLayout().then(setLayout)
+    void window.glide.getBookmarksBarVisible().then(setBookmarksBar)
     const offLayout = window.glide.onLayoutChanged(setLayout)
+    const offBmVisible = window.glide.onBookmarksBarVisible(setBookmarksBar)
+    const offBookmarks = window.glide.onBookmarksState(({ accountId, bookmarks: next }) =>
+      setActiveId((current) => {
+        if (accountId === current) setBookmarks(next)
+        return current
+      })
+    )
+    const offImport = window.glide.onImportBookmarks(() => setImportOpen(true))
     const offActive = window.glide.onActiveChanged(setActiveId)
     const offNav = window.glide.onNavState(setNav)
     const offUnread = window.glide.onUnread(({ id, count }) =>
@@ -78,6 +99,9 @@ export function App(): JSX.Element {
       offTabs()
       offList()
       offLayout()
+      offBmVisible()
+      offBookmarks()
+      offImport()
       offEditAccount()
       offEditShortcut()
     }
@@ -97,13 +121,14 @@ export function App(): JSX.Element {
       setActiveApp(activeShortcutId)
     })
     void window.glide.getTabs(activeId).then(setTabs)
+    void window.glide.getBookmarks(activeId).then(setBookmarks)
   }, [activeId])
 
   // A native view paints above DOM, so hide the active web view while a modal
   // is open and restore it when the modal closes.
   useEffect(() => {
-    void window.glide.setOverlay(Boolean(dialog || shortcutDialog))
-  }, [dialog, shortcutDialog])
+    void window.glide.setOverlay(Boolean(dialog || shortcutDialog || importOpen))
+  }, [dialog, shortcutDialog, importOpen])
 
   const handleSelect = (id: string): void => {
     setActiveId(id)
@@ -222,6 +247,17 @@ export function App(): JSX.Element {
             onReload={() => void window.glide.reload()}
             onNavigate={(url) => void window.glide.navigate(url)}
           />
+          {bookmarksBar && (
+            <BookmarksBar
+              bookmarks={bookmarks}
+              onOpen={(url) => {
+                if (activeId) void window.glide.openBookmark(activeId, url)
+              }}
+              onOpenFolder={(folderId) => {
+                if (activeId) void window.glide.openBookmarkFolder(activeId, folderId)
+              }}
+            />
+          )}
           <main className="content" data-testid="content">
             {accounts.length === 0 && (
               <div className="placeholder">
@@ -248,6 +284,16 @@ export function App(): JSX.Element {
           initial={shortcutDialog.initial}
           onSubmit={handleShortcutSubmit}
           onCancel={() => setShortcutDialog(null)}
+        />
+      )}
+
+      {importOpen && (
+        <ChromeImportDialog
+          onImport={(chromeDir) => {
+            if (activeId) void window.glide.importChromeBookmarks(activeId, chromeDir)
+            setImportOpen(false)
+          }}
+          onCancel={() => setImportOpen(false)}
         />
       )}
     </div>

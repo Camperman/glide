@@ -5,6 +5,9 @@ import type {
   AccountSummary,
   AppInfo,
   AppRailLayout,
+  BookmarkFolder,
+  BookmarkNode,
+  ChromeProfile,
   NavState,
   NewAccountInput,
   Shortcut,
@@ -12,7 +15,9 @@ import type {
   ShortcutPatch,
   TabInfo
 } from '../shared/types'
+import type { MenuItemConstructorOptions } from 'electron'
 import type { PersistedAccount } from './persistence'
+import { listChromeProfiles, readChromeBookmarkBar } from './chromeBookmarks'
 
 // The profile avatars, then (in 'left' layout) the vertical app rail. Content
 // starts to the right. The renderer reserves the matching widths/heights in CSS
@@ -21,7 +26,7 @@ export const SIDEBAR_WIDTH = 64
 export const APP_RAIL_WIDTH = 84
 export const TITLE_BAR_HEIGHT = 38
 export const TOP_BAR_HEIGHT = 44
-const TOP_CHROME_HEIGHT = TITLE_BAR_HEIGHT + TOP_BAR_HEIGHT
+export const BOOKMARKS_BAR_HEIGHT = 36
 
 const NEW_TAB_URL = 'https://www.google.com'
 
@@ -58,6 +63,7 @@ export interface AccountConfig {
   lastUrl?: string
   shortcuts?: Shortcut[]
   avatarUrl?: string
+  bookmarks?: BookmarkNode[]
 }
 
 /** One open browser tab within an account. */
@@ -79,6 +85,7 @@ interface ManagedAccount {
   /** Unread count per app (shortcut id), parsed from each app tab's title. */
   unreadByApp: Record<string, number>
   avatarUrl?: string
+  bookmarks: BookmarkNode[]
 }
 
 // Read-only snippet run in the logged-in Google page to find the account photo.
@@ -139,6 +146,18 @@ function hostOf(url: string): string {
   }
 }
 
+/** Find a bookmark folder by id anywhere in the tree. */
+function findFolder(nodes: BookmarkNode[], id: string): BookmarkFolder | undefined {
+  for (const node of nodes) {
+    if (node.type === 'folder') {
+      if (node.id === id) return node
+      const nested = findFolder(node.children, id)
+      if (nested) return nested
+    }
+  }
+  return undefined
+}
+
 /**
  * Owns the lifecycle, layout, and switching of per-account web views. Each
  * account runs in its own persistent session partition (`persist:account-<id>`)
@@ -159,6 +178,8 @@ export class AccountManager {
   private zoomFactor = 1
   // Where the app rail sits ('left' reserves a left column; 'top' does not).
   private railLayout: AppRailLayout = 'left'
+  // Whether the bookmarks bar is shown (app-wide; reserves chrome height).
+  private bookmarksBar = false
 
   constructor(win: BrowserWindow, onState?: () => void) {
     this.win = win
@@ -186,7 +207,8 @@ export class AccountManager {
       shortcuts,
       tabs: [],
       unreadByApp: {},
-      avatarUrl: config.avatarUrl
+      avatarUrl: config.avatarUrl,
+      bookmarks: config.bookmarks ?? []
     }
     this.accounts.set(config.id, account)
     this.order.push(config.id)
@@ -462,6 +484,78 @@ export class AccountManager {
     this.setZoom(1)
   }
 
+  getBookmarksBarVisible(): boolean {
+    return this.bookmarksBar
+  }
+
+  setBookmarksBarVisible(visible: boolean): void {
+    this.bookmarksBar = visible
+    this.layout()
+    if (!this.win.isDestroyed()) this.win.webContents.send('bookmarks:visible', visible)
+    this.onState?.()
+  }
+
+  getBookmarks(accountId: string): BookmarkNode[] {
+    return this.accounts.get(accountId)?.bookmarks ?? []
+  }
+
+  private emitBookmarks(account: ManagedAccount): void {
+    if (!this.win.isDestroyed()) {
+      this.win.webContents.send('bookmarks:state', {
+        accountId: account.config.id,
+        bookmarks: account.bookmarks
+      })
+    }
+  }
+
+  /** Open a bookmark URL in a new ad-hoc tab. */
+  openBookmark(accountId: string, url: string): void {
+    const account = this.accounts.get(accountId)
+    if (!account) return
+    const tab = this.openTab(account, url)
+    account.activeTabId = tab.id
+    this.afterTabChange(accountId, account)
+  }
+
+  /** Native popup menu for a bookmark folder (nested folders → submenus). */
+  openBookmarkFolder(accountId: string, folderId: string): void {
+    const account = this.accounts.get(accountId)
+    if (!account) return
+    const folder = findFolder(account.bookmarks, folderId)
+    if (!folder) return
+    Menu.buildFromTemplate(this.bookmarkMenu(accountId, folder.children)).popup({ window: this.win })
+  }
+
+  private bookmarkMenu(accountId: string, nodes: BookmarkNode[]): MenuItemConstructorOptions[] {
+    if (nodes.length === 0) return [{ label: '(empty)', enabled: false }]
+    return nodes.map((node) =>
+      node.type === 'folder'
+        ? { label: node.title || 'Folder', submenu: this.bookmarkMenu(accountId, node.children) }
+        : { label: node.title || node.url, click: () => this.openBookmark(accountId, node.url) }
+    )
+  }
+
+  getChromeProfiles(): ChromeProfile[] {
+    try {
+      return listChromeProfiles()
+    } catch {
+      return []
+    }
+  }
+
+  /** Replace a profile's bookmarks with the chosen Chrome profile's bar tree. */
+  importChromeBookmarks(accountId: string, chromeDir: string): void {
+    const account = this.accounts.get(accountId)
+    if (!account) return
+    try {
+      account.bookmarks = readChromeBookmarkBar(chromeDir)
+    } catch {
+      return
+    }
+    this.emitBookmarks(account)
+    this.onState?.()
+  }
+
   getLayout(): AppRailLayout {
     return this.railLayout
   }
@@ -476,6 +570,10 @@ export class AccountManager {
 
   private contentLeft(): number {
     return SIDEBAR_WIDTH + (this.railLayout === 'left' ? APP_RAIL_WIDTH : 0)
+  }
+
+  private topChrome(): number {
+    return TITLE_BAR_HEIGHT + TOP_BAR_HEIGHT + (this.bookmarksBar ? BOOKMARKS_BAR_HEIGHT : 0)
   }
 
   /** Show only the active account's active tab; keep all others alive but hidden. */
@@ -657,7 +755,8 @@ export class AccountManager {
         lastUrl: activeTab?.currentUrl ?? account.config.lastUrl,
         order: index,
         shortcuts: account.shortcuts,
-        avatarUrl: account.avatarUrl
+        avatarUrl: account.avatarUrl,
+        bookmarks: account.bookmarks
       }
     })
   }
@@ -737,11 +836,12 @@ export class AccountManager {
     const tab = this.activeTab()
     if (!tab) return
     const left = this.contentLeft()
+    const top = this.topChrome()
     tab.view.setBounds({
       x: left,
-      y: TOP_CHROME_HEIGHT,
+      y: top,
       width: Math.max(0, width - left),
-      height: Math.max(0, height - TOP_CHROME_HEIGHT)
+      height: Math.max(0, height - top)
     })
   }
 }
