@@ -22,9 +22,6 @@ export function Sidebar({
 }: SidebarProps): JSX.Element {
   return (
     <nav className="sidebar" data-testid="sidebar" aria-label="Accounts">
-      <div className="sidebar__brand" title="Glide">
-        G
-      </div>
       <div className="sidebar__accounts">
         {accounts.map((account) => {
           const count = unread[account.id] ?? 0
