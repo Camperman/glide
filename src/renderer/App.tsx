@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
+import { TabStrip } from './TabStrip'
 import { ShortcutsBar } from './ShortcutsBar'
 import { AccountDialog, type DialogValues } from './AccountDialog'
 import { ShortcutDialog, type ShortcutValues } from './ShortcutDialog'
-import type { AccountSummary, NavState, Shortcut } from '../shared/types'
+import type { AccountSummary, NavState, Shortcut, TabInfo } from '../shared/types'
 
 interface DialogState {
   mode: 'add' | 'edit'
@@ -28,8 +29,7 @@ export function App(): JSX.Element {
   const [unread, setUnread] = useState<Record<string, number>>({})
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([])
   const [shortcutDialog, setShortcutDialog] = useState<ShortcutDialogState | null>(null)
-  const [openTabs, setOpenTabs] = useState<string[]>([])
-  const [activeTab, setActiveTab] = useState<string | undefined>()
+  const [tabs, setTabs] = useState<TabInfo[]>([])
 
   useEffect(() => {
     void window.glide.listAccounts().then(setAccounts)
@@ -47,12 +47,9 @@ export function App(): JSX.Element {
         return current
       })
     )
-    const offTabs = window.glide.onTabsState(({ accountId, open, active }) =>
+    const offTabs = window.glide.onTabsState(({ accountId, tabs: next }) =>
       setActiveId((current) => {
-        if (accountId === current) {
-          setOpenTabs(open)
-          setActiveTab(active)
-        }
+        if (accountId === current) setTabs(next)
         return current
       })
     )
@@ -83,15 +80,11 @@ export function App(): JSX.Element {
   useEffect(() => {
     if (!activeId) {
       setShortcuts([])
-      setOpenTabs([])
-      setActiveTab(undefined)
+      setTabs([])
       return
     }
     void window.glide.getShortcuts(activeId).then(setShortcuts)
-    void window.glide.getTabs(activeId).then(({ open, active }) => {
-      setOpenTabs(open)
-      setActiveTab(active)
-    })
+    void window.glide.getTabs(activeId).then(setTabs)
   }, [activeId])
 
   // A native view paints above DOM, so hide the active web view while a modal
@@ -159,13 +152,23 @@ export function App(): JSX.Element {
     setShortcutDialog(null)
   }
 
-  const activeLabel = accounts.find((a) => a.id === activeId)?.label
-  const titleText = nav?.title || activeLabel || 'Glide'
-
   return (
     <div className="app">
       <div className="titlebar" data-testid="titlebar">
-        <span className="titlebar__text">{titleText}</span>
+        <div className="titlebar__lights" />
+        <TabStrip
+          tabs={tabs}
+          disabled={!activeId}
+          onActivate={(tabId) => {
+            if (activeId) void window.glide.activateTab(activeId, tabId)
+          }}
+          onClose={(tabId) => {
+            if (activeId) void window.glide.closeTab(activeId, tabId)
+          }}
+          onNew={() => {
+            if (activeId) void window.glide.newTab(activeId)
+          }}
+        />
       </div>
 
       <div className="body">
@@ -188,14 +191,9 @@ export function App(): JSX.Element {
           />
           <ShortcutsBar
             shortcuts={shortcuts}
-            openIds={openTabs}
-            activeId={activeTab}
             disabled={!activeId}
             onOpen={(shortcutId) => {
               if (activeId) void window.glide.openShortcut(activeId, shortcutId)
-            }}
-            onClose={(shortcutId) => {
-              if (activeId) void window.glide.closeTab(activeId, shortcutId)
             }}
             onAdd={openAddShortcut}
             onContextMenu={(shortcutId) => {

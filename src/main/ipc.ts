@@ -55,11 +55,15 @@ export function registerIpc(accounts: AccountManager): void {
   )
   ipcMain.handle('chrome:overlay', (_event, open: boolean) => accounts.setOverlayOpen(open))
 
-  ipcMain.handle('tabs:open', (_event, accountId: string, shortcutId: string) =>
+  ipcMain.handle('tabs:open-shortcut', (_event, accountId: string, shortcutId: string) =>
     accounts.openShortcut(accountId, shortcutId)
   )
-  ipcMain.handle('tabs:close', (_event, accountId: string, shortcutId: string) =>
-    accounts.closeTab(accountId, shortcutId)
+  ipcMain.handle('tabs:new', (_event, accountId: string) => accounts.newTab(accountId))
+  ipcMain.handle('tabs:activate', (_event, accountId: string, tabId: string) =>
+    accounts.activateTab(accountId, tabId)
+  )
+  ipcMain.handle('tabs:close', (_event, accountId: string, tabId: string) =>
+    accounts.closeTab(accountId, tabId)
   )
   ipcMain.handle('tabs:list', (_event, accountId: string) => accounts.getTabs(accountId))
 

@@ -7,20 +7,23 @@ import type {
   NewAccountInput,
   Shortcut,
   ShortcutInput,
-  ShortcutPatch
+  ShortcutPatch,
+  TabInfo
 } from '../shared/types'
 import type { PersistedAccount } from './persistence'
 
 export const SIDEBAR_WIDTH = 64
 // Heights of the renderer's chrome strips, top to bottom: a draggable title
-// bar, the nav/address toolbar, then the shortcuts/tab bar. The renderer
-// reserves the same strips in CSS (.titlebar, .topbar, .shortcuts); keep in sync.
-export const TITLE_BAR_HEIGHT = 30
+// bar (which also holds the tab strip), the nav/address toolbar, then the
+// bookmarks bar. The renderer reserves the same strips in CSS; keep in sync.
+export const TITLE_BAR_HEIGHT = 38
 export const TOP_BAR_HEIGHT = 44
 export const SHORTCUTS_BAR_HEIGHT = 40
 const TOP_CHROME_HEIGHT = TITLE_BAR_HEIGHT + TOP_BAR_HEIGHT + SHORTCUTS_BAR_HEIGHT
 
-/** The Google services seeded into every new profile's shortcuts bar. */
+const NEW_TAB_URL = 'https://www.google.com'
+
+/** The Google services seeded into every new profile's bookmarks bar. */
 function defaultShortcuts(): Shortcut[] {
   return [
     { label: 'Mail', url: 'https://mail.google.com' },
@@ -53,27 +56,23 @@ export interface AccountConfig {
   lastUrl?: string
   shortcuts?: Shortcut[]
   avatarUrl?: string
-  activeShortcutId?: string
 }
 
-/** One live page within an account. Keyed by the shortcut that opened it. */
+/** One open browser tab within an account. */
 interface Tab {
-  shortcutId: string
+  id: string
   view: WebContentsView
   currentUrl: string
+  title: string
+  /** Set when the tab was opened from a bookmark, so that bookmark focuses it. */
+  originShortcutId?: string
 }
 
-/**
- * An account: its config, its shortcut list (the tab definitions), and the
- * set of currently-open tabs (lazy — created on first open, kept alive until
- * closed). All tabs of an account share its session partition, so every
- * service stays logged into the same Google account.
- */
 interface ManagedAccount {
   config: AccountConfig
   shortcuts: Shortcut[]
-  tabs: Map<string, Tab>
-  activeShortcutId?: string
+  tabs: Tab[]
+  activeTabId?: string
   unread: number
   avatarUrl?: string
 }
@@ -121,11 +120,11 @@ function hostOf(url: string): string {
 /**
  * Owns the lifecycle, layout, and switching of per-account web views. Each
  * account runs in its own persistent session partition (`persist:account-<id>`)
- * so cookies and login never bleed across accounts. Within an account, each
- * shortcut can open its own persistent tab (a WebContentsView) so switching
- * between services (Mail ↔ Calendar) is instant and never reloads. Account
- * content is untrusted remote Google pages: no preload, no node integration,
- * context isolation on. `onState` fires whenever something persistable changes.
+ * so cookies and login never bleed across accounts. Within an account you can
+ * open multiple tabs (each a WebContentsView, all sharing the account session);
+ * tabs stay live until closed. Account content is untrusted remote pages: no
+ * preload, no node integration, context isolation on. `onState` fires whenever
+ * something persistable changes.
  */
 export class AccountManager {
   private readonly win: BrowserWindow
@@ -133,8 +132,6 @@ export class AccountManager {
   private readonly accounts = new Map<string, ManagedAccount>()
   private order: string[] = []
   private activeId?: string
-  // When a DOM modal is open the renderer asks us to hide the active web view,
-  // since a native WebContentsView always paints above the HTML UI.
   private overlayOpen = false
 
   constructor(win: BrowserWindow, onState?: () => void) {
@@ -150,9 +147,7 @@ export class AccountManager {
   createAccount(config: AccountConfig): void {
     if (this.accounts.has(config.id)) return
 
-    const part = partitionFor(config.id)
-    // Configure the shared session for this account once.
-    const ses = session.fromPartition(part)
+    const ses = session.fromPartition(partitionFor(config.id))
     ses.setPermissionRequestHandler((_wc, permission, callback) =>
       callback(GRANTED_PERMISSIONS.has(permission))
     )
@@ -160,47 +155,33 @@ export class AccountManager {
 
     const shortcuts =
       config.shortcuts && config.shortcuts.length > 0 ? config.shortcuts : defaultShortcuts()
-    const account: ManagedAccount = {
-      config,
-      shortcuts,
-      tabs: new Map(),
-      unread: 0,
-      avatarUrl: config.avatarUrl
-    }
+    const account: ManagedAccount = { config, shortcuts, tabs: [], unread: 0, avatarUrl: config.avatarUrl }
     this.accounts.set(config.id, account)
     this.order.push(config.id)
 
-    // Open the initial tab: the previously-active shortcut, else the one whose
-    // host matches the restored URL, else the first shortcut. Restore lastUrl
-    // into it when it belongs to that service.
+    // Open one initial tab restoring the last URL; tag it to a matching bookmark
+    // so that bookmark focuses it rather than opening a duplicate.
     const restoreUrl = config.lastUrl ?? config.homeUrl
-    const initial =
-      (config.activeShortcutId && shortcuts.find((s) => s.id === config.activeShortcutId)) ||
-      shortcuts.find((s) => hostOf(s.url) === hostOf(restoreUrl)) ||
-      shortcuts[0]
-    if (initial) {
-      const url = hostOf(restoreUrl) === hostOf(initial.url) ? restoreUrl : initial.url
-      this.openTab(account, initial.id, url)
-      account.activeShortcutId = initial.id
-    }
+    const origin = shortcuts.find((s) => hostOf(s.url) === hostOf(restoreUrl))?.id
+    const tab = this.openTab(account, restoreUrl, origin)
+    account.activeTabId = tab.id
 
     if (!this.activeId) this.setActive(config.id)
     this.refreshVisibility()
     this.layout()
   }
 
-  /** Create a live tab view for a shortcut and load it. Does not activate it. */
-  private openTab(account: ManagedAccount, shortcutId: string, url: string): Tab {
+  private openTab(account: ManagedAccount, url: string, originShortcutId?: string): Tab {
     const part = partitionFor(account.config.id)
     const view = new WebContentsView({
       webPreferences: { partition: part, contextIsolation: true, nodeIntegration: false }
     })
     view.setBackgroundColor('#ffffff')
     const wc = view.webContents
-    const tab: Tab = { shortcutId, view, currentUrl: url }
+    const tab: Tab = { id: randomUUID(), view, currentUrl: url, title: '', originShortcutId }
 
     const isActiveTab = (): boolean =>
-      this.activeId === account.config.id && account.activeShortcutId === shortcutId
+      this.activeId === account.config.id && account.activeTabId === tab.id
 
     wc.on('did-finish-load', () => {
       this.extractAvatar(account, wc)
@@ -217,7 +198,7 @@ export class AccountManager {
       if (isMainFrame) onNav()
     })
     wc.on('page-title-updated', (_e, title) => {
-      // Unread comes from the Gmail tab's title; track it per account.
+      tab.title = title
       if (hostOf(wc.getURL()).includes('mail.google.com')) {
         const count = parseUnread(title)
         if (count !== account.unread) {
@@ -225,6 +206,7 @@ export class AccountManager {
           this.emitUnread(account.config.id, count)
         }
       }
+      if (this.activeId === account.config.id) this.emitTabs(account)
       if (isActiveTab()) this.emitNav()
     })
 
@@ -240,41 +222,60 @@ export class AccountManager {
     this.win.contentView.addChildView(view)
     void wc.loadURL(url)
 
-    account.tabs.set(shortcutId, tab)
+    account.tabs.push(tab)
     return tab
   }
 
-  /** Open (or focus, without reloading) the tab for a shortcut in an account. */
+  /** Open a brand-new tab (the + button / Cmd-T) and focus it. */
+  newTab(accountId: string): void {
+    const account = this.accounts.get(accountId)
+    if (!account) return
+    const tab = this.openTab(account, NEW_TAB_URL)
+    account.activeTabId = tab.id
+    this.afterTabChange(accountId, account)
+  }
+
+  /** Focus an existing tab by id. */
+  activateTab(accountId: string, tabId: string): void {
+    const account = this.accounts.get(accountId)
+    if (!account || !account.tabs.some((t) => t.id === tabId)) return
+    account.activeTabId = tabId
+    this.afterTabChange(accountId, account)
+  }
+
+  /** Close (unload) a tab; activate a neighbour if it was active. */
+  closeTab(accountId: string, tabId: string): void {
+    const account = this.accounts.get(accountId)
+    if (!account) return
+    const index = account.tabs.findIndex((t) => t.id === tabId)
+    if (index === -1) return
+
+    this.destroyTab(account.tabs[index])
+    account.tabs.splice(index, 1)
+    if (account.activeTabId === tabId) {
+      const neighbour = account.tabs[index] ?? account.tabs[index - 1]
+      account.activeTabId = neighbour?.id
+    }
+    this.afterTabChange(accountId, account)
+  }
+
+  /** Bookmark click: focus the tab opened from it, else open a new one. */
   openShortcut(accountId: string, shortcutId: string): void {
     const account = this.accounts.get(accountId)
     if (!account) return
     const shortcut = account.shortcuts.find((s) => s.id === shortcutId)
     if (!shortcut) return
-
-    if (!account.tabs.has(shortcutId)) this.openTab(account, shortcutId, shortcut.url)
-    account.activeShortcutId = shortcutId
-
-    if (accountId === this.activeId) {
-      this.refreshVisibility()
-      this.layout()
-      this.emitNav()
+    const existing = account.tabs.find((t) => t.originShortcutId === shortcutId)
+    if (existing) {
+      account.activeTabId = existing.id
+    } else {
+      const tab = this.openTab(account, shortcut.url, shortcutId)
+      account.activeTabId = tab.id
     }
-    this.emitTabs(account)
-    this.onState?.()
+    this.afterTabChange(accountId, account)
   }
 
-  /** Close (unload) a tab to reclaim memory; reopening reloads it fresh. */
-  closeTab(accountId: string, shortcutId: string): void {
-    const account = this.accounts.get(accountId)
-    const tab = account?.tabs.get(shortcutId)
-    if (!account || !tab) return
-
-    this.destroyTab(tab)
-    account.tabs.delete(shortcutId)
-    if (account.activeShortcutId === shortcutId) {
-      account.activeShortcutId = account.tabs.keys().next().value
-    }
-
+  private afterTabChange(accountId: string, account: ManagedAccount): void {
     if (accountId === this.activeId) {
       this.refreshVisibility()
       this.layout()
@@ -293,7 +294,6 @@ export class AccountManager {
     }
   }
 
-  /** Add a brand-new account (UI-driven), make it active, and persist. */
   addAccount(input: NewAccountInput): string {
     const id = randomUUID()
     this.createAccount({
@@ -320,9 +320,8 @@ export class AccountManager {
   async removeAccount(id: string): Promise<void> {
     const account = this.accounts.get(id)
     if (!account) return
-
-    for (const tab of account.tabs.values()) this.destroyTab(tab)
-    account.tabs.clear()
+    for (const tab of account.tabs) this.destroyTab(tab)
+    account.tabs = []
     this.accounts.delete(id)
     this.order = this.order.filter((x) => x !== id)
 
@@ -369,11 +368,9 @@ export class AccountManager {
   /** Show only the active account's active tab; keep all others alive but hidden. */
   private refreshVisibility(): void {
     for (const [accountId, account] of this.accounts) {
-      for (const [shortcutId, tab] of account.tabs) {
+      for (const tab of account.tabs) {
         const visible =
-          accountId === this.activeId &&
-          shortcutId === account.activeShortcutId &&
-          !this.overlayOpen
+          accountId === this.activeId && tab.id === account.activeTabId && !this.overlayOpen
         tab.view.setVisible(visible)
       }
     }
@@ -381,8 +378,8 @@ export class AccountManager {
 
   private activeTab(): Tab | undefined {
     const account = this.activeId ? this.accounts.get(this.activeId) : undefined
-    if (!account?.activeShortcutId) return undefined
-    return account.tabs.get(account.activeShortcutId)
+    if (!account?.activeTabId) return undefined
+    return account.tabs.find((t) => t.id === account.activeTabId)
   }
 
   private activeWebContents(): WebContents | undefined {
@@ -415,7 +412,7 @@ export class AccountManager {
     const wc = tab.view.webContents
     return {
       accountId: account.config.id,
-      tabId: tab.shortcutId,
+      tabId: tab.id,
       url: wc.getURL(),
       canGoBack: wc.navigationHistory.canGoBack(),
       canGoForward: wc.navigationHistory.canGoForward(),
@@ -427,19 +424,22 @@ export class AccountManager {
     if (!this.win.isDestroyed()) this.win.webContents.send('nav:state', this.getActiveNavState())
   }
 
-  /** Open tabs + active tab for an account (for the renderer's tab strip). */
-  getTabs(accountId: string): { open: string[]; active?: string } {
+  /** Open tabs for an account (id, display title, active flag) for the tab strip. */
+  getTabs(accountId: string): TabInfo[] {
     const account = this.accounts.get(accountId)
-    if (!account) return { open: [] }
-    return { open: [...account.tabs.keys()], active: account.activeShortcutId }
+    if (!account) return []
+    return account.tabs.map((t) => ({
+      id: t.id,
+      title: t.title || hostOf(t.currentUrl) || 'New tab',
+      active: t.id === account.activeTabId
+    }))
   }
 
   private emitTabs(account: ManagedAccount): void {
     if (!this.win.isDestroyed()) {
       this.win.webContents.send('tabs:state', {
         accountId: account.config.id,
-        open: [...account.tabs.keys()],
-        active: account.activeShortcutId
+        tabs: this.getTabs(account.config.id)
       })
     }
   }
@@ -454,14 +454,11 @@ export class AccountManager {
   }
 
   popupShortcutMenu(accountId: string, shortcutId: string): void {
-    const account = this.accounts.get(accountId)
-    const isOpen = account?.tabs.has(shortcutId) ?? false
     Menu.buildFromTemplate([
       {
         label: 'Edit',
         click: () => this.win.webContents.send('menu:edit-shortcut', { accountId, shortcutId })
       },
-      { label: 'Close tab', enabled: isOpen, click: () => this.closeTab(accountId, shortcutId) },
       { type: 'separator' },
       { label: 'Remove', click: () => this.removeShortcut(accountId, shortcutId) }
     ]).popup({ window: this.win })
@@ -493,7 +490,6 @@ export class AccountManager {
       })
   }
 
-  /** Map of account id → session partition string (test/diagnostic use). */
   partitions(): Record<string, string> {
     const out: Record<string, string> = {}
     for (const id of this.order) out[id] = partitionFor(id)
@@ -503,9 +499,7 @@ export class AccountManager {
   snapshotAccounts(): PersistedAccount[] {
     return this.order.map((id, index) => {
       const account = this.accounts.get(id)!
-      const activeTab = account.activeShortcutId
-        ? account.tabs.get(account.activeShortcutId)
-        : undefined
+      const activeTab = account.tabs.find((t) => t.id === account.activeTabId)
       return {
         id: account.config.id,
         label: account.config.label,
@@ -514,8 +508,7 @@ export class AccountManager {
         lastUrl: activeTab?.currentUrl ?? account.config.lastUrl,
         order: index,
         shortcuts: account.shortcuts,
-        avatarUrl: account.avatarUrl,
-        activeShortcutId: account.activeShortcutId
+        avatarUrl: account.avatarUrl
       }
     })
   }
@@ -554,8 +547,6 @@ export class AccountManager {
   removeShortcut(id: string, shortcutId: string): void {
     const account = this.accounts.get(id)
     if (!account) return
-    // Closing its tab first frees the view and fixes up the active tab.
-    if (account.tabs.has(shortcutId)) this.closeTab(id, shortcutId)
     account.shortcuts = account.shortcuts.filter((s) => s.id !== shortcutId)
     this.emitShortcuts(id)
     this.onState?.()

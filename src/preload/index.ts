@@ -50,8 +50,11 @@ const api: GlideApi = {
     ipcRenderer.on('shortcuts:updated', listener)
     return () => ipcRenderer.removeListener('shortcuts:updated', listener)
   },
-  openShortcut: (accountId, shortcutId) => ipcRenderer.invoke('tabs:open', accountId, shortcutId),
-  closeTab: (accountId, shortcutId) => ipcRenderer.invoke('tabs:close', accountId, shortcutId),
+  openShortcut: (accountId, shortcutId) =>
+    ipcRenderer.invoke('tabs:open-shortcut', accountId, shortcutId),
+  newTab: (accountId) => ipcRenderer.invoke('tabs:new', accountId),
+  activateTab: (accountId, tabId) => ipcRenderer.invoke('tabs:activate', accountId, tabId),
+  closeTab: (accountId, tabId) => ipcRenderer.invoke('tabs:close', accountId, tabId),
   getTabs: (accountId) => ipcRenderer.invoke('tabs:list', accountId),
   onTabsState: (cb) => {
     const listener = (_event: unknown, state: TabsState): void => cb(state)

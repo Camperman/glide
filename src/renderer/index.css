@@ -36,26 +36,106 @@ body {
   height: 100vh;
 }
 
-/* Draggable black title bar (Shift-style). Height must match TITLE_BAR_HEIGHT
-   in src/main/accounts.ts. Traffic lights are positioned over its left edge. */
+/* Draggable black title bar (Shift-style) that holds the tab strip. Height
+   must match TITLE_BAR_HEIGHT in src/main/accounts.ts. Traffic lights float
+   over its left edge, so we reserve space for them. */
 .titlebar {
-  height: 30px;
-  flex: 0 0 30px;
+  height: 38px;
+  flex: 0 0 38px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-end;
   background: var(--chrome-black);
   -webkit-app-region: drag;
 }
 
-.titlebar__text {
-  font-size: 12px;
+.titlebar__lights {
+  flex: 0 0 76px;
+}
+
+/* Tab strip. The empty area stays draggable; tabs/new-tab opt out. */
+.tabstrip {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 100%;
+  padding-right: 8px;
+  overflow-x: auto;
+}
+
+.tab {
+  -webkit-app-region: no-drag;
+  flex: 0 1 180px;
+  min-width: 60px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 12px;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
   color: var(--muted);
-  max-width: 60%;
+  cursor: pointer;
+}
+
+.tab:hover {
+  background: #17181b;
+}
+
+.tab--active {
+  background: var(--panel-bg);
+  color: var(--text);
+}
+
+.tab__title {
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  pointer-events: none;
+  font-size: 12px;
+}
+
+.tab__close {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tab__close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
+.tab-new {
+  -webkit-app-region: no-drag;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 1px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.tab-new:hover:not(:disabled) {
+  background: #17181b;
+  color: var(--text);
+}
+
+.tab-new:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .body {
@@ -244,75 +324,33 @@ body {
   white-space: nowrap;
 }
 
-/* Each pill is a tab. Closed = outline; open = filled; active = accent border. */
+/* Bookmark buttons. Clicking opens/focuses a tab for the service. */
 .shortcut {
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
   height: 26px;
-  border-radius: 13px;
-  border: 1px solid #3a3e47;
-  background: transparent;
-  color: var(--text);
-  font-size: 12px;
-  overflow: hidden;
-}
-
-.shortcut--open {
-  background: #23262d;
-}
-
-.shortcut--active {
-  border-color: var(--accent);
-  background: #2b313d;
-}
-
-.shortcut__label {
-  height: 100%;
-  padding: 0 10px;
+  padding: 0 12px;
+  border-radius: 6px;
   border: none;
   background: transparent;
-  color: inherit;
+  color: var(--text);
   font-size: 12px;
   cursor: pointer;
 }
 
-.shortcut__label:disabled {
+.shortcut:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.shortcut:disabled {
   opacity: 0.4;
   cursor: default;
-}
-
-.shortcut:hover:not(.shortcut--active) {
-  border-color: #565c68;
-}
-
-.shortcut__close {
-  height: 100%;
-  padding: 0 8px 0 2px;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.shortcut__close:hover {
-  color: var(--text);
 }
 
 .shortcut--add {
-  width: 26px;
-  justify-content: center;
+  width: 28px;
   padding: 0;
   font-size: 15px;
   color: var(--muted);
-  cursor: pointer;
-}
-
-.shortcut--add:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 .content {

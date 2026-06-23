@@ -16,6 +16,8 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 8 | Local macOS packaging (Glide.app) | ✅ |
 | 9 | Per-profile shortcuts bar | ✅ |
 | 10 | Shortcuts → persistent tabs (lazy, closeable) | ✅ |
+| 11 | General browser tabs (tab strip, + new tab, any URL) | ✅ |
+| 12 | Multiple windows (Cmd-N) | ⬜ (next) |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining work is optional polish
@@ -83,6 +85,17 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Phase 11 — ✅ General browser tabs.** Decoupled tabs from shortcuts: tabs are
+  now id-based (`Tab` has its own id + title + optional `originShortcutId`), held
+  in an ordered list per account. Added a real **tab strip in the title bar**
+  (`TabStrip.tsx`) with per-tab titles, × close, and a + new-tab button (opens
+  google.com). The shortcuts bar reverted to a **bookmarks bar** — clicking a
+  bookmark focuses its tab if open, else opens a new one. New IPC
+  (`tabs:new/activate/close/open-shortcut/list` + `tabs:state` now carries
+  `TabInfo[]`). Title bar reserves space for the traffic lights and stays
+  draggable in its empty area. guard + build + smoke + isolation pass.
+  **Next: Phase 12 makes tabs per-window so multiple windows can each have their
+  own tabs (shared profiles/sessions).**
 - **Phase 10 — ✅ Shortcuts became persistent tabs.** Reworked `AccountManager`
   from one view per account to a per-account **tab model**: each shortcut can open
   its own live `WebContentsView` (all tabs share the account's session partition,

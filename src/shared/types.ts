@@ -51,11 +51,17 @@ export interface NavState {
   title: string
 }
 
-/** Open tabs + active tab for the active account (drives the tab strip). */
+/** One open tab as shown in the tab strip. */
+export interface TabInfo {
+  id: string
+  title: string
+  active: boolean
+}
+
+/** Open tabs for the active account (drives the tab strip). */
 export interface TabsState {
   accountId: string
-  open: string[]
-  active?: string
+  tabs: TabInfo[]
 }
 
 /** The bridge exposed on `window.glide` in the renderer (see preload). */
@@ -80,12 +86,16 @@ export interface GlideApi {
   addShortcut(accountId: string, input: ShortcutInput): Promise<void>
   updateShortcut(accountId: string, shortcutId: string, patch: ShortcutPatch): Promise<void>
   removeShortcut(accountId: string, shortcutId: string): Promise<void>
-  /** Open or focus (no reload) the tab for a shortcut. */
+  /** Bookmark click: focus the tab opened from it, else open a new one. */
   openShortcut(accountId: string, shortcutId: string): Promise<void>
-  /** Close (unload) a shortcut's tab. */
-  closeTab(accountId: string, shortcutId: string): Promise<void>
-  getTabs(accountId: string): Promise<{ open: string[]; active?: string }>
-  /** Subscribe to the active account's open/active tab set. Returns an unsubscribe fn. */
+  /** Open a brand-new tab (+ / Cmd-T). */
+  newTab(accountId: string): Promise<void>
+  /** Focus an existing tab by id. */
+  activateTab(accountId: string, tabId: string): Promise<void>
+  /** Close (unload) a tab by id. */
+  closeTab(accountId: string, tabId: string): Promise<void>
+  getTabs(accountId: string): Promise<TabInfo[]>
+  /** Subscribe to the active account's open tabs. Returns an unsubscribe fn. */
   onTabsState(cb: (state: TabsState) => void): () => void
   /** Subscribe to a profile's shortcut list changing. Returns an unsubscribe fn. */
   onShortcutsUpdated(cb: (update: { accountId: string; shortcuts: Shortcut[] }) => void): () => void
