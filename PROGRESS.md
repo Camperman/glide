@@ -8,7 +8,7 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 0 | Scaffold & boot | ✅ |
 | 1 | One isolated account view | ✅ |
 | 2 | Multiple accounts + sidebar switching + isolation proof | ✅ |
-| 3 | Persistence | ⬜ |
+| 3 | Persistence | ✅ |
 | 4 | Account management UI (add/remove/edit) | ⬜ |
 | 5 | Browser chrome (navigation) | ⬜ |
 | 6 | Visual identity + unread badges | ⬜ |
@@ -16,11 +16,13 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 8+ | Optional polish | ⬜ (only if requested) |
 
 ## Next up
-**Phase 3 — Persistence.** Read/write a `PersistedState` JSON in `userData`
-(accounts, activeAccountId, window bounds). On launch, restore accounts +
-active + per-account `lastUrl` + window geometry. Persist `lastUrl` per account
-on navigation (debounced) and window bounds on resize/move. Missing/corrupt
-file → clean launch with defaults.
+**Phase 4 — Account management UI (add/remove/edit).** Bottom-of-sidebar `[+]`
+opens an "Add account" dialog (label, color, optional home URL → default Gmail);
+adding creates a new partition + view + item, persisted immediately. Hover/right-
+click an item → Edit (label/color) or Remove. Remove destroys the view AND
+clears that partition's session data (truly gone). Must work with ≥4 accounts.
+Needs IPC: addAccount / updateAccount / removeAccount + an `accounts:updated`
+push so the sidebar re-renders. The `[+]` button is currently disabled.
 
 ## Pending manual checks (need a real Google login)
 - **Phase 1:** Run `npm start`, log into Gmail in the account pane, quit, relaunch
@@ -31,8 +33,22 @@ file → clean launch with defaults.
   Switching back is instant (background views stay loaded, no reload). Logging
   into one account does not affect the others (the automated isolation test
   already proves the cookie-level guarantee).
+- **Phase 3:** Navigate each account somewhere specific (e.g. Calendar, Drive),
+  resize/move the window, quit, relaunch → same accounts on the same pages, same
+  active account, same window geometry. Then quit, delete
+  `~/Library/Application Support/Glide/glide-state.json`, relaunch → clean start
+  with the 3 default accounts (no crash).
 
 ## Phase log
+- **Phase 3 — ✅** Added `src/main/persistence.ts` (load/save `PersistedState`
+  JSON in userData, defaults on missing/corrupt). `AccountManager` now tracks each
+  account's current URL (did-navigate / in-page) and exposes `snapshotAccounts()`.
+  Main restores window bounds + accounts + active + per-account `lastUrl` on launch
+  and saves debounced on navigation/active-change/resize/move, plus on before-quit.
+  Set `app.setName('Glide')` so data lives in `Application Support/Glide/`. Verified
+  the state file is written with accounts, lastUrl, activeAccountId, and window
+  geometry. guard + build + smoke + isolation pass. Restart-restore is a manual
+  check (needs a GUI session).
 - **Phase 2 — ✅** Multiple isolated accounts (3 hardcoded seeds), each its own
   `persist:account-<id>` WebContentsView. Sidebar renders avatars; clicking
   switches the active view via IPC (`accounts:switch` / `accounts:active-changed`),

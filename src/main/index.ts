@@ -2,19 +2,46 @@ import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { AccountManager, type AccountConfig } from './accounts'
 import { registerIpc } from './ipc'
+import { loadState, saveState, type PersistedState } from './persistence'
 
-// Phase 2: hardcoded seed accounts. Phase 3 loads these from disk; Phase 4
-// lets the user add/remove them from the UI.
-const SEED_ACCOUNTS: AccountConfig[] = [
-  { id: 'one', label: 'One', color: '#4c8bf5', url: 'https://mail.google.com' },
-  { id: 'two', label: 'Two', color: '#34a853', url: 'https://mail.google.com' },
-  { id: 'three', label: 'Three', color: '#ea4335', url: 'https://mail.google.com' }
-]
+// Give Glide its own userData directory (unpackaged Electron otherwise shares
+// the generic "Electron" dir with every other dev app).
+app.setName('Glide')
+
+let mainWindow: BrowserWindow | undefined
+let accounts: AccountManager | undefined
+let state: PersistedState = { version: 1, accounts: [] }
+
+let persistTimer: NodeJS.Timeout | undefined
+
+function buildState(): PersistedState {
+  const bounds = mainWindow && !mainWindow.isDestroyed() ? mainWindow.getBounds() : undefined
+  return {
+    version: 1,
+    accounts: accounts ? accounts.snapshotAccounts() : state.accounts,
+    activeAccountId: accounts?.getActiveId() ?? state.activeAccountId,
+    window: bounds
+      ? { width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y }
+      : state.window
+  }
+}
+
+function persistNow(): void {
+  state = buildState()
+  saveState(state)
+}
+
+function schedulePersist(): void {
+  if (persistTimer) clearTimeout(persistTimer)
+  persistTimer = setTimeout(persistNow, 400)
+}
 
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
+  const win = new BrowserWindow({
+    width: state.window?.width ?? 1280,
+    height: state.window?.height ?? 800,
+    x: state.window?.x,
+    y: state.window?.y,
     title: 'Glide',
     show: false,
     backgroundColor: '#1b1d22',
@@ -25,31 +52,48 @@ function createWindow(): void {
       sandbox: false
     }
   })
+  mainWindow = win
 
-  mainWindow.on('ready-to-show', () => mainWindow.show())
+  win.on('ready-to-show', () => win.show())
+  win.on('resize', schedulePersist)
+  win.on('move', schedulePersist)
 
-  // electron-vite injects the dev server URL in development; load the built
-  // file in production / packaged runs. The React renderer is the base layer
-  // (sidebar + chrome); account WebContentsViews are overlaid on top of it.
+  // The React renderer is the base layer (sidebar + chrome); account
+  // WebContentsViews are overlaid on top of it.
   if (process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    void win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    void win.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  // Multiple isolated account views, switchable from the sidebar.
-  const accounts = new AccountManager(mainWindow)
+  // Restore accounts from persisted state, each on its own isolated partition.
+  accounts = new AccountManager(win, schedulePersist)
   registerIpc(accounts)
-  accounts.load(SEED_ACCOUNTS)
+
+  const configs: AccountConfig[] = [...state.accounts]
+    .sort((a, b) => a.order - b.order)
+    .map((a) => ({
+      id: a.id,
+      label: a.label,
+      color: a.color,
+      homeUrl: a.homeUrl,
+      lastUrl: a.lastUrl
+    }))
+  accounts.load(configs)
+
+  if (state.activeAccountId) accounts.setActive(state.activeAccountId)
 }
 
 app.whenReady().then(() => {
+  state = loadState()
   createWindow()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
+
+app.on('before-quit', persistNow)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
