@@ -1,6 +1,11 @@
 import { ipcMain, session } from 'electron'
 import type { AccountManager } from './accounts'
-import type { AccountPatch, NewAccountInput } from '../shared/types'
+import type {
+  AccountPatch,
+  NewAccountInput,
+  ShortcutInput,
+  ShortcutPatch
+} from '../shared/types'
 
 /**
  * Wire the renderer ↔ main IPC for account listing and switching, plus the
@@ -26,6 +31,21 @@ export function registerIpc(accounts: AccountManager): void {
   ipcMain.handle('nav:state', () => accounts.getActiveNavState())
 
   ipcMain.handle('accounts:unread-all', () => accounts.unreadAll())
+
+  ipcMain.handle('shortcuts:list', (_event, accountId: string) =>
+    accounts.shortcutsFor(accountId)
+  )
+  ipcMain.handle('shortcuts:add', (_event, accountId: string, input: ShortcutInput) =>
+    accounts.addShortcut(accountId, input)
+  )
+  ipcMain.handle(
+    'shortcuts:update',
+    (_event, accountId: string, shortcutId: string, patch: ShortcutPatch) =>
+      accounts.updateShortcut(accountId, shortcutId, patch)
+  )
+  ipcMain.handle('shortcuts:remove', (_event, accountId: string, shortcutId: string) =>
+    accounts.removeShortcut(accountId, shortcutId)
+  )
 
   ipcMain.handle('__test:partitions', () => accounts.partitions())
 

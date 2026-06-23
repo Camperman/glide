@@ -13,7 +13,9 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 5 | Browser chrome (navigation) | ✅ |
 | 6 | Visual identity + unread badges | ✅ |
 | 7 | Notifications + keyboard shortcuts | ✅ (1 sub-item deferred — see note) |
-| 8+ | Optional polish | ⬜ (only if requested) |
+| 8 | Local macOS packaging (Glide.app) | ✅ |
+| 9 | Per-profile shortcuts bar | ✅ |
+| — | Real multi-tab browsing | ⬜ (deferred — user chose "tabs later") |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining work is optional polish
@@ -69,12 +71,29 @@ isolated preload as a conscious, documented tradeoff.
 - **Phase 6:** With Gmail logged in, a sidebar avatar shows a red unread badge
   matching the inbox's `Inbox (N)` count; read/receive mail → the badge updates
   live, including for accounts you aren't currently viewing; clears at zero.
+- **Phase 9:** With a profile active, the shortcuts row shows Mail/Calendar/Drive/
+  etc.; click one → that profile navigates there (still logged into that account).
+  Switch profiles → the row swaps to that profile's shortcuts. `[+]` adds a
+  shortcut (e.g. a specific Drive folder URL); right-click → Edit/Remove. Changes
+  persist across restart and are independent per profile.
 - **Phase 7:** Receiving mail in any account produces a native macOS notification
   (you may need to approve Glide in System Settings → Notifications on first run).
   Press Cmd-1 / Cmd-2 / … → switches to the 1st / 2nd / … account, even when an
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Phase 9 — ✅ Per-profile shortcuts bar.** A second chrome strip
+  (`ShortcutsBar.tsx`, 40px, `SHORTCUTS_BAR_HEIGHT`) under the address bar shows
+  the ACTIVE profile's shortcuts as pills; clicking one navigates that profile's
+  view (stays in its isolated session). Each profile has its own editable list,
+  seeded with the common Google apps (Mail/Calendar/Drive/Docs/Sheets/Meet/
+  Contacts) and persisted per account (`PersistedAccount.shortcuts`); existing
+  accounts auto-migrate to the defaults on next launch. `[+]` adds, right-click a
+  pill → Edit/Remove (`ShortcutDialog.tsx`). New IPC (`shortcuts:list/add/update/
+  remove` + `shortcuts:updated` push), preload methods, and shared types. Account
+  view bounds now reserve both chrome strips (TOP_BAR + SHORTCUTS_BAR). guard +
+  build + smoke + isolation pass. Real multi-tab browsing remains deferred (user
+  chose "shortcuts now, tabs later").
 - **Packaging (Phase 8, user-approved) — ✅** Added electron-builder with a local,
   unsigned macOS build (`npm run package` → `dist/mac-arm64/Glide.app`). Needed
   because passkey-over-Bluetooth (caBLE) sign-in fails when the app is launched

@@ -17,6 +17,22 @@ export interface AccountPatch {
   color?: string
 }
 
+export interface Shortcut {
+  id: string
+  label: string
+  url: string
+}
+
+export interface ShortcutInput {
+  label: string
+  url: string
+}
+
+export interface ShortcutPatch {
+  label?: string
+  url?: string
+}
+
 export interface TestCookie {
   name: string
   value: string
@@ -49,6 +65,12 @@ export interface GlideApi {
   getUnread(): Promise<Record<string, number>>
   /** Subscribe to per-account unread-count changes. Returns an unsubscribe fn. */
   onUnread(cb: (update: { id: string; count: number }) => void): () => void
+  getShortcuts(accountId: string): Promise<Shortcut[]>
+  addShortcut(accountId: string, input: ShortcutInput): Promise<void>
+  updateShortcut(accountId: string, shortcutId: string, patch: ShortcutPatch): Promise<void>
+  removeShortcut(accountId: string, shortcutId: string): Promise<void>
+  /** Subscribe to a profile's shortcut list changing. Returns an unsubscribe fn. */
+  onShortcutsUpdated(cb: (update: { accountId: string; shortcuts: Shortcut[] }) => void): () => void
   /** Subscribe to active-account changes pushed from main. Returns an unsubscribe fn. */
   onActiveChanged(cb: (id: string) => void): () => void
   /** Subscribe to the account list changing (add/edit/remove). Returns an unsubscribe fn. */

@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import type { Shortcut } from '../shared/types'
 
 export interface PersistedAccount {
   id: string
@@ -9,6 +10,7 @@ export interface PersistedAccount {
   homeUrl: string
   lastUrl?: string
   order: number
+  shortcuts?: Shortcut[]
 }
 
 export interface WindowBounds {

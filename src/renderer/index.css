@@ -186,6 +186,50 @@ body {
   border-color: var(--accent);
 }
 
+/* Per-profile shortcuts row. Height must match SHORTCUTS_BAR_HEIGHT in
+   src/main/accounts.ts. */
+.shortcuts {
+  height: 40px;
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  background: var(--content-bg);
+  border-bottom: 1px solid #2a2d34;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.shortcut {
+  flex: 0 0 auto;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 13px;
+  border: 1px solid #3a3e47;
+  background: #23262d;
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.shortcut:hover:not(:disabled) {
+  background: #2f333b;
+}
+
+.shortcut:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.shortcut--add {
+  width: 26px;
+  padding: 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
 .content {
   flex: 1;
   display: flex;

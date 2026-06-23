@@ -1,12 +1,35 @@
 import { BrowserWindow, WebContents, WebContentsView, session } from 'electron'
 import { randomUUID } from 'crypto'
-import type { AccountPatch, AccountSummary, NavState, NewAccountInput } from '../shared/types'
+import type {
+  AccountPatch,
+  AccountSummary,
+  NavState,
+  NewAccountInput,
+  Shortcut,
+  ShortcutInput,
+  ShortcutPatch
+} from '../shared/types'
 import type { PersistedAccount } from './persistence'
 
 export const SIDEBAR_WIDTH = 64
-// Height of the renderer's browser-chrome top bar. The renderer reserves the
-// same strip in CSS (.topbar); keep these in sync.
+// Heights of the renderer's two chrome strips (top bar + shortcuts bar). The
+// renderer reserves the same strips in CSS (.topbar, .shortcuts); keep in sync.
 export const TOP_BAR_HEIGHT = 44
+export const SHORTCUTS_BAR_HEIGHT = 40
+const TOP_CHROME_HEIGHT = TOP_BAR_HEIGHT + SHORTCUTS_BAR_HEIGHT
+
+/** The Google services seeded into every new profile's shortcuts bar. */
+function defaultShortcuts(): Shortcut[] {
+  return [
+    { label: 'Mail', url: 'https://mail.google.com' },
+    { label: 'Calendar', url: 'https://calendar.google.com' },
+    { label: 'Drive', url: 'https://drive.google.com' },
+    { label: 'Docs', url: 'https://docs.google.com' },
+    { label: 'Sheets', url: 'https://sheets.google.com' },
+    { label: 'Meet', url: 'https://meet.google.com' },
+    { label: 'Contacts', url: 'https://contacts.google.com' }
+  ].map((s) => ({ id: randomUUID(), ...s }))
+}
 
 // Permissions granted to account sessions. Notifications is the headline one;
 // media covers Google Meet camera/mic. Everything else is denied.
@@ -26,6 +49,7 @@ export interface AccountConfig {
   color: string
   homeUrl: string
   lastUrl?: string
+  shortcuts?: Shortcut[]
 }
 
 interface ManagedView {
@@ -33,6 +57,7 @@ interface ManagedView {
   view: WebContentsView
   currentUrl: string
   unread: number
+  shortcuts: Shortcut[]
 }
 
 export function partitionFor(id: string): string {
@@ -160,7 +185,9 @@ export class AccountManager {
     ses.setPermissionCheckHandler((_wc, permission) => GRANTED_PERMISSIONS.has(permission))
 
     const startUrl = config.lastUrl ?? config.homeUrl
-    const managed: ManagedView = { config, view, currentUrl: startUrl, unread: 0 }
+    const shortcuts =
+      config.shortcuts && config.shortcuts.length > 0 ? config.shortcuts : defaultShortcuts()
+    const managed: ManagedView = { config, view, currentUrl: startUrl, unread: 0, shortcuts }
 
     const onNavEvent = (): void => {
       managed.currentUrl = view.webContents.getURL()
@@ -297,7 +324,8 @@ export class AccountManager {
         color: config.color,
         homeUrl: config.homeUrl,
         lastUrl: currentUrl,
-        order: index
+        order: index,
+        shortcuts: this.views.get(id)!.shortcuts
       }
     })
   }
@@ -305,6 +333,48 @@ export class AccountManager {
   private emitUpdated(): void {
     if (!this.win.isDestroyed()) {
       this.win.webContents.send('accounts:updated', this.summaries())
+    }
+  }
+
+  shortcutsFor(id: string): Shortcut[] {
+    return this.views.get(id)?.shortcuts ?? []
+  }
+
+  addShortcut(id: string, input: ShortcutInput): void {
+    const managed = this.views.get(id)
+    if (!managed) return
+    managed.shortcuts.push({
+      id: randomUUID(),
+      label: input.label.trim() || 'Shortcut',
+      url: normalizeUrl(input.url) || input.url
+    })
+    this.emitShortcuts(id)
+    this.onState?.()
+  }
+
+  updateShortcut(id: string, shortcutId: string, patch: ShortcutPatch): void {
+    const shortcut = this.views.get(id)?.shortcuts.find((s) => s.id === shortcutId)
+    if (!shortcut) return
+    if (patch.label !== undefined) shortcut.label = patch.label.trim() || shortcut.label
+    if (patch.url !== undefined) shortcut.url = normalizeUrl(patch.url) || shortcut.url
+    this.emitShortcuts(id)
+    this.onState?.()
+  }
+
+  removeShortcut(id: string, shortcutId: string): void {
+    const managed = this.views.get(id)
+    if (!managed) return
+    managed.shortcuts = managed.shortcuts.filter((s) => s.id !== shortcutId)
+    this.emitShortcuts(id)
+    this.onState?.()
+  }
+
+  private emitShortcuts(id: string): void {
+    if (!this.win.isDestroyed()) {
+      this.win.webContents.send('shortcuts:updated', {
+        accountId: id,
+        shortcuts: this.shortcutsFor(id)
+      })
     }
   }
 
@@ -328,9 +398,9 @@ export class AccountManager {
     if (!active) return
     active.view.setBounds({
       x: SIDEBAR_WIDTH,
-      y: TOP_BAR_HEIGHT,
+      y: TOP_CHROME_HEIGHT,
       width: Math.max(0, width - SIDEBAR_WIDTH),
-      height: Math.max(0, height - TOP_BAR_HEIGHT)
+      height: Math.max(0, height - TOP_CHROME_HEIGHT)
     })
   }
 }
