@@ -21,6 +21,16 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 click-to-switch (see deferral note below), per-account mute/notification rules,
 remember scroll position, zoom, download handling, auto-fetched Google avatars.
 
+### Known limitation — sign-in
+**Passkey-over-Bluetooth ("hybrid"/caBLE) is not supported.** It depends on
+full Apple Developer-ID signing + notarization + hardened runtime, which a
+locally-built, ad-hoc-signed app doesn't have (granting the Bluetooth TCC
+permission is necessary but not sufficient). **Sign in with a non-Bluetooth
+method instead** — on Google's "Something went wrong / Make sure Bluetooth is
+on" screen, click **Try another way** → "Tap Yes on your phone" (internet-based,
+not BLE) / authenticator code / password / backup code. Sessions persist, so
+this is one-time per account. Revisit only if we ever add Developer-ID signing.
+
 ### Deferred from Phase 7 (intentional)
 **Notification click → switch to that account.** Reliable mapping of an HTML5
 `Notification` click back to its originating account requires injecting script
