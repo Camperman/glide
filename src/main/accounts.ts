@@ -537,17 +537,23 @@ export class AccountManager {
     if (!this.win.isDestroyed()) this.win.webContents.send('nav:state', this.getActiveNavState())
   }
 
-  /** Open tabs for an account (id, display title, active flag) for the tab strip. */
+  /**
+   * Tabs shown in the tab strip: only ad-hoc tabs (pages opened via + or links).
+   * App tabs are represented by the app rail instead, so they don't duplicate
+   * into the strip.
+   */
   getTabs(accountId: string): TabInfo[] {
     const account = this.accounts.get(accountId)
     if (!account) return []
-    return account.tabs.map((t) => ({
-      id: t.id,
-      title: t.title || hostOf(t.currentUrl) || 'New tab',
-      active: t.id === account.activeTabId,
-      favicon: t.favicon,
-      shortcutId: t.originShortcutId
-    }))
+    return account.tabs
+      .filter((t) => !t.originShortcutId)
+      .map((t) => ({
+        id: t.id,
+        title: t.title || hostOf(t.currentUrl) || 'New tab',
+        active: t.id === account.activeTabId,
+        favicon: t.favicon,
+        shortcutId: t.originShortcutId
+      }))
   }
 
   private emitTabs(account: ManagedAccount): void {
@@ -590,10 +596,17 @@ export class AccountManager {
   }
 
   popupShortcutMenu(accountId: string, shortcutId: string): void {
+    const account = this.accounts.get(accountId)
+    const openTab = account?.tabs.find((t) => t.originShortcutId === shortcutId)
     Menu.buildFromTemplate([
       {
         label: 'Edit',
         click: () => this.win.webContents.send('menu:edit-shortcut', { accountId, shortcutId })
+      },
+      {
+        label: 'Close',
+        enabled: Boolean(openTab),
+        click: () => openTab && this.closeTab(accountId, openTab.id)
       },
       { type: 'separator' },
       { label: 'Remove', click: () => this.removeShortcut(accountId, shortcutId) }

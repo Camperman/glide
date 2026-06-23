@@ -98,6 +98,12 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Polish — ✅ Apps no longer duplicate into the tab strip.** App tabs (those
+  with an `originShortcutId`) are now filtered out of `getTabs`, so clicking an
+  app just switches to it via the app rail instead of also creating a tab-strip
+  entry. The tab strip is reserved for ad-hoc pages (+ / links). Added a **Close**
+  item to an app's right-click menu (enabled when its tab is open) to unload it.
+  guard + build + smoke + isolation pass.
 - **Polish — ✅ App-rail layout switch.** New persisted `layout` setting
   (`'left' | 'top'`) toggled from **View → App Layout** (radio; menu rebuilds to
   keep the check in sync). `'left'` = the vertical rail (current); `'top'` = a
