@@ -107,6 +107,24 @@ export function normalizeUrl(url: string): string {
   return `https://${trimmed}`
 }
 
+/**
+ * Resolve an address-bar entry the way a browser omnibox does: navigate to it
+ * if it looks like a URL/domain, otherwise run a Google search.
+ */
+export function resolveQuery(input: string): string {
+  const trimmed = input.trim()
+  if (!trimmed) return ''
+  // Explicit scheme (http://, https://, etc.) → use as-is.
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return trimmed
+  const looksLikeUrl =
+    !/\s/.test(trimmed) &&
+    (/^localhost(:\d+)?(\/.*)?$/i.test(trimmed) ||
+      /^\d{1,3}(\.\d{1,3}){3}(:\d+)?(\/.*)?$/.test(trimmed) || // IPv4
+      /^[^\s/.]+\.[^\s/.]+/.test(trimmed)) // host.tld, no spaces
+  if (looksLikeUrl) return `https://${trimmed}`
+  return `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`
+}
+
 /** Extract an unread count from a page title, e.g. "Inbox (12) - … - Gmail" → 12. */
 export function parseUnread(title: string): number {
   const match = title.match(/\((\d+)\)/)
@@ -477,8 +495,8 @@ export class AccountManager {
     this.activeWebContents()?.reload()
   }
 
-  navigate(url: string): void {
-    const target = normalizeUrl(url)
+  navigate(input: string): void {
+    const target = resolveQuery(input)
     if (target) void this.activeWebContents()?.loadURL(target)
   }
 

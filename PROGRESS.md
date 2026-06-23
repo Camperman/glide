@@ -98,6 +98,11 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Polish — ✅ Omnibox search.** The address bar now resolves entries like a
+  browser: explicit schemes and domain-like input (host.tld, paths, localhost,
+  IPv4) navigate directly; anything with spaces or no dot becomes a Google search
+  (`google.com/search?q=…`). Implemented as `resolveQuery()` used by `navigate()`.
+  guard + build + smoke + isolation pass.
 - **Polish — ✅ Drag-to-reorder tabs.** Tabs in the strip are now `draggable`;
   dragging shows a live preview (local order state) and commits on drop via
   `reorderTabs` IPC, which reorders `account.tabs` in main and re-emits tab
