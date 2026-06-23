@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { TabStrip } from './TabStrip'
-import { ShortcutsBar } from './ShortcutsBar'
+import { AppRail } from './AppRail'
 import { AccountDialog, type DialogValues } from './AccountDialog'
 import { ShortcutDialog, type ShortcutValues } from './ShortcutDialog'
-import type { AccountSummary, NavState, Shortcut, TabInfo } from '../shared/types'
+import type { AccountSummary, AppInfo, NavState, TabInfo } from '../shared/types'
 
 interface DialogState {
   mode: 'add' | 'edit'
@@ -27,7 +27,8 @@ export function App(): JSX.Element {
   const [dialog, setDialog] = useState<DialogState | null>(null)
   const [nav, setNav] = useState<NavState | null>(null)
   const [unread, setUnread] = useState<Record<string, number>>({})
-  const [shortcuts, setShortcuts] = useState<Shortcut[]>([])
+  const [apps, setApps] = useState<AppInfo[]>([])
+  const [activeApp, setActiveApp] = useState<string | undefined>()
   const [shortcutDialog, setShortcutDialog] = useState<ShortcutDialogState | null>(null)
   const [tabs, setTabs] = useState<TabInfo[]>([])
 
@@ -41,9 +42,12 @@ export function App(): JSX.Element {
     const offUnread = window.glide.onUnread(({ id, count }) =>
       setUnread((prev) => ({ ...prev, [id]: count }))
     )
-    const offShortcuts = window.glide.onShortcutsUpdated(({ accountId, shortcuts: next }) =>
+    const offApps = window.glide.onAppsState(({ accountId, apps: next, activeShortcutId }) =>
       setActiveId((current) => {
-        if (accountId === current) setShortcuts(next)
+        if (accountId === current) {
+          setApps(next)
+          setActiveApp(activeShortcutId)
+        }
         return current
       })
     )
@@ -67,7 +71,7 @@ export function App(): JSX.Element {
       offActive()
       offNav()
       offUnread()
-      offShortcuts()
+      offApps()
       offTabs()
       offList()
       offEditAccount()
@@ -76,14 +80,18 @@ export function App(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Load the active profile's shortcuts + tab state when the active account changes.
+  // Load the active profile's apps + tab state when the active account changes.
   useEffect(() => {
     if (!activeId) {
-      setShortcuts([])
+      setApps([])
+      setActiveApp(undefined)
       setTabs([])
       return
     }
-    void window.glide.getShortcuts(activeId).then(setShortcuts)
+    void window.glide.getApps(activeId).then(({ apps: next, activeShortcutId }) => {
+      setApps(next)
+      setActiveApp(activeShortcutId)
+    })
     void window.glide.getTabs(activeId).then(setTabs)
   }, [activeId])
 
@@ -181,6 +189,19 @@ export function App(): JSX.Element {
           onContextMenu={(id) => void window.glide.showAccountMenu(id)}
         />
 
+        <AppRail
+          apps={apps}
+          activeId={activeApp}
+          disabled={!activeId}
+          onOpen={(shortcutId) => {
+            if (activeId) void window.glide.openShortcut(activeId, shortcutId)
+          }}
+          onAdd={openAddShortcut}
+          onContextMenu={(shortcutId) => {
+            if (activeId) void window.glide.showShortcutMenu(activeId, shortcutId)
+          }}
+        />
+
         <div className="main-col">
           <TopBar
             nav={nav}
@@ -188,17 +209,6 @@ export function App(): JSX.Element {
             onForward={() => void window.glide.goForward()}
             onReload={() => void window.glide.reload()}
             onNavigate={(url) => void window.glide.navigate(url)}
-          />
-          <ShortcutsBar
-            shortcuts={shortcuts}
-            disabled={!activeId}
-            onOpen={(shortcutId) => {
-              if (activeId) void window.glide.openShortcut(activeId, shortcutId)
-            }}
-            onAdd={openAddShortcut}
-            onContextMenu={(shortcutId) => {
-              if (activeId) void window.glide.showShortcutMenu(activeId, shortcutId)
-            }}
           />
           <main className="content" data-testid="content">
             {accounts.length === 0 && (

@@ -1,5 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AccountSummary, GlideApi, NavState, Shortcut, TabsState } from '../shared/types'
+import type {
+  AccountSummary,
+  AppsState,
+  GlideApi,
+  NavState,
+  Shortcut,
+  TabsState
+} from '../shared/types'
 
 // Typed, minimal bridge exposed to the renderer. The renderer holds no session
 // state — it sends intents to main and renders state pushed back.
@@ -37,6 +44,12 @@ const api: GlideApi = {
     return () => ipcRenderer.removeListener('accounts:unread', listener)
   },
   getShortcuts: (accountId) => ipcRenderer.invoke('shortcuts:list', accountId),
+  getApps: (accountId) => ipcRenderer.invoke('apps:list', accountId),
+  onAppsState: (cb) => {
+    const listener = (_event: unknown, state: AppsState): void => cb(state)
+    ipcRenderer.on('apps:state', listener)
+    return () => ipcRenderer.removeListener('apps:state', listener)
+  },
   addShortcut: (accountId, input) => ipcRenderer.invoke('shortcuts:add', accountId, input),
   updateShortcut: (accountId, shortcutId, patch) =>
     ipcRenderer.invoke('shortcuts:update', accountId, shortcutId, patch),

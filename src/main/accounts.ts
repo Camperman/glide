@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto'
 import type {
   AccountPatch,
   AccountSummary,
+  AppInfo,
   NavState,
   NewAccountInput,
   Shortcut,
@@ -12,14 +13,15 @@ import type {
 } from '../shared/types'
 import type { PersistedAccount } from './persistence'
 
+// Two left columns: the profile avatars, then the vertical app rail. Content
+// starts to the right of both. The renderer reserves the matching widths/heights
+// in CSS (.sidebar, .apprail, .titlebar, .topbar); keep these in sync.
 export const SIDEBAR_WIDTH = 64
-// Heights of the renderer's chrome strips, top to bottom: a draggable title
-// bar (which also holds the tab strip), the nav/address toolbar, then the
-// bookmarks bar. The renderer reserves the same strips in CSS; keep in sync.
+export const APP_RAIL_WIDTH = 84
+const CONTENT_LEFT = SIDEBAR_WIDTH + APP_RAIL_WIDTH
 export const TITLE_BAR_HEIGHT = 38
 export const TOP_BAR_HEIGHT = 44
-export const SHORTCUTS_BAR_HEIGHT = 40
-const TOP_CHROME_HEIGHT = TITLE_BAR_HEIGHT + TOP_BAR_HEIGHT + SHORTCUTS_BAR_HEIGHT
+const TOP_CHROME_HEIGHT = TITLE_BAR_HEIGHT + TOP_BAR_HEIGHT
 
 const NEW_TAB_URL = 'https://www.google.com'
 
@@ -64,7 +66,8 @@ interface Tab {
   view: WebContentsView
   currentUrl: string
   title: string
-  /** Set when the tab was opened from a bookmark, so that bookmark focuses it. */
+  favicon?: string
+  /** Set when the tab was opened from an app, so that app focuses it. */
   originShortcutId?: string
 }
 
@@ -73,7 +76,8 @@ interface ManagedAccount {
   shortcuts: Shortcut[]
   tabs: Tab[]
   activeTabId?: string
-  unread: number
+  /** Unread count per app (shortcut id), parsed from each app tab's title. */
+  unreadByApp: Record<string, number>
   avatarUrl?: string
 }
 
@@ -157,7 +161,13 @@ export class AccountManager {
 
     const shortcuts =
       config.shortcuts && config.shortcuts.length > 0 ? config.shortcuts : defaultShortcuts()
-    const account: ManagedAccount = { config, shortcuts, tabs: [], unread: 0, avatarUrl: config.avatarUrl }
+    const account: ManagedAccount = {
+      config,
+      shortcuts,
+      tabs: [],
+      unreadByApp: {},
+      avatarUrl: config.avatarUrl
+    }
     this.accounts.set(config.id, account)
     this.order.push(config.id)
 
@@ -202,15 +212,35 @@ export class AccountManager {
     })
     wc.on('page-title-updated', (_e, title) => {
       tab.title = title
-      if (hostOf(wc.getURL()).includes('mail.google.com')) {
+      // Per-app unread: attribute the title's "(N)" to the app this tab belongs to.
+      if (tab.originShortcutId) {
         const count = parseUnread(title)
-        if (count !== account.unread) {
-          account.unread = count
-          this.emitUnread(account.config.id, count)
+        if (account.unreadByApp[tab.originShortcutId] !== count) {
+          account.unreadByApp[tab.originShortcutId] = count
+          this.emitUnread(account.config.id)
+          if (this.activeId === account.config.id) this.emitApps(account)
         }
       }
       if (this.activeId === account.config.id) this.emitTabs(account)
       if (isActiveTab()) this.emitNav()
+    })
+
+    wc.on('page-favicon-updated', (_e, favicons) => {
+      const icon = favicons[0]
+      if (!icon || icon === tab.favicon) return
+      tab.favicon = icon
+      // Cache it on the originating app so the rail shows it even before reload.
+      if (tab.originShortcutId) {
+        const shortcut = account.shortcuts.find((s) => s.id === tab.originShortcutId)
+        if (shortcut && shortcut.favicon !== icon) {
+          shortcut.favicon = icon
+          this.onState?.()
+        }
+      }
+      if (this.activeId === account.config.id) {
+        this.emitTabs(account)
+        this.emitApps(account)
+      }
     })
 
     // Keep popups (auth, "open in new window") in the same account session.
@@ -283,6 +313,7 @@ export class AccountManager {
       this.refreshVisibility()
       this.layout()
       this.emitNav()
+      this.emitApps(account)
     }
     this.emitTabs(account)
     this.onState?.()
@@ -351,6 +382,7 @@ export class AccountManager {
     if (!this.win.isDestroyed()) this.win.webContents.send('accounts:active-changed', id)
     this.emitNav()
     this.emitTabs(this.accounts.get(id)!)
+    this.emitApps(this.accounts.get(id)!)
     this.onState?.()
   }
 
@@ -459,7 +491,9 @@ export class AccountManager {
     return account.tabs.map((t) => ({
       id: t.id,
       title: t.title || hostOf(t.currentUrl) || 'New tab',
-      active: t.id === account.activeTabId
+      active: t.id === account.activeTabId,
+      favicon: t.favicon,
+      shortcutId: t.originShortcutId
     }))
   }
 
@@ -470,6 +504,27 @@ export class AccountManager {
         tabs: this.getTabs(account.config.id)
       })
     }
+  }
+
+  /** The app rail's view of an account: each app + its favicon + unread, plus
+   *  which app the active tab belongs to. */
+  getApps(accountId: string): { apps: AppInfo[]; activeShortcutId?: string } {
+    const account = this.accounts.get(accountId)
+    if (!account) return { apps: [] }
+    const activeTab = account.tabs.find((t) => t.id === account.activeTabId)
+    const apps: AppInfo[] = account.shortcuts.map((s) => ({
+      id: s.id,
+      label: s.label,
+      favicon: s.favicon,
+      unread: account.unreadByApp[s.id] ?? 0
+    }))
+    return { apps, activeShortcutId: activeTab?.originShortcutId }
+  }
+
+  private emitApps(account: ManagedAccount): void {
+    if (this.win.isDestroyed()) return
+    const { apps, activeShortcutId } = this.getApps(account.config.id)
+    this.win.webContents.send('apps:state', { accountId: account.config.id, apps, activeShortcutId })
   }
 
   popupAccountMenu(accountId: string): void {
@@ -560,6 +615,7 @@ export class AccountManager {
       url: normalizeUrl(input.url) || input.url
     })
     this.emitShortcuts(id)
+    this.emitApps(account)
     this.onState?.()
   }
 
@@ -569,6 +625,7 @@ export class AccountManager {
     if (patch.label !== undefined) shortcut.label = patch.label.trim() || shortcut.label
     if (patch.url !== undefined) shortcut.url = normalizeUrl(patch.url) || shortcut.url
     this.emitShortcuts(id)
+    this.emitApps(this.accounts.get(id)!)
     this.onState?.()
   }
 
@@ -576,7 +633,10 @@ export class AccountManager {
     const account = this.accounts.get(id)
     if (!account) return
     account.shortcuts = account.shortcuts.filter((s) => s.id !== shortcutId)
+    delete account.unreadByApp[shortcutId]
     this.emitShortcuts(id)
+    this.emitApps(account)
+    this.emitUnread(id)
     this.onState?.()
   }
 
@@ -589,15 +649,19 @@ export class AccountManager {
     }
   }
 
-  private emitUnread(id: string, count: number): void {
-    if (!this.win.isDestroyed()) {
-      this.win.webContents.send('accounts:unread', { id, count })
-    }
+  private totalUnread(account: ManagedAccount): number {
+    return Object.values(account.unreadByApp).reduce((a, b) => a + b, 0)
+  }
+
+  private emitUnread(id: string): void {
+    const account = this.accounts.get(id)
+    if (!account || this.win.isDestroyed()) return
+    this.win.webContents.send('accounts:unread', { id, count: this.totalUnread(account) })
   }
 
   unreadAll(): Record<string, number> {
     const out: Record<string, number> = {}
-    for (const id of this.order) out[id] = this.accounts.get(id)!.unread
+    for (const id of this.order) out[id] = this.totalUnread(this.accounts.get(id)!)
     return out
   }
 
@@ -607,9 +671,9 @@ export class AccountManager {
     const tab = this.activeTab()
     if (!tab) return
     tab.view.setBounds({
-      x: SIDEBAR_WIDTH,
+      x: CONTENT_LEFT,
       y: TOP_CHROME_HEIGHT,
-      width: Math.max(0, width - SIDEBAR_WIDTH),
+      width: Math.max(0, width - CONTENT_LEFT),
       height: Math.max(0, height - TOP_CHROME_HEIGHT)
     })
   }

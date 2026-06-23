@@ -22,6 +22,7 @@ export function TabStrip({ tabs, disabled, onActivate, onClose, onNew }: TabStri
           title={tab.title}
           onClick={() => onActivate(tab.id)}
         >
+          {tab.favicon && <img className="tab__favicon" src={tab.favicon} alt="" />}
           <span className="tab__title">{tab.title}</span>
           <button
             type="button"

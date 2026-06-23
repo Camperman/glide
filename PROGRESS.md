@@ -17,7 +17,8 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 9 | Per-profile shortcuts bar | ✅ |
 | 10 | Shortcuts → persistent tabs (lazy, closeable) | ✅ |
 | 11 | General browser tabs (tab strip, + new tab, any URL) | ✅ |
-| 12 | Multiple windows (Cmd-N) | ⬜ (next) |
+| 13 | App rail + favicons + per-app badges | ✅ |
+| 12 | Multiple windows (Cmd-N) | ⬜ (queued) |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining work is optional polish
@@ -85,6 +86,16 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Phase 13 — ✅ App rail + favicons + per-app badges.** Added a vertical **app
+  rail** (`AppRail.tsx`, `APP_RAIL_WIDTH`) between the profile avatars and the page,
+  replacing the horizontal bookmarks bar; content now starts at SIDEBAR_WIDTH +
+  APP_RAIL_WIDTH. Each app shows its **favicon** (captured via `page-favicon-updated`,
+  cached on the shortcut + persisted), a label, and a **per-app unread badge**
+  (unread is now tracked per app: `unreadByApp`, parsed from each app tab's title;
+  the profile avatar badge shows the per-account total). Tabs in the strip also show
+  favicons. New IPC (`apps:list` + `apps:state` push), `Shortcut.favicon`,
+  `TabInfo.favicon/shortcutId`, `AppInfo`/`AppsState`. CSP `img-src` broadened to
+  `https:` so favicons load. guard + build + smoke + isolation pass.
 - **Polish — ✅ Page zoom.** Cmd +/-/0 (via the View menu, so they fire even when
   a page has focus) zoom the active content. Zoom is app-wide (applied to every
   open tab and reapplied on each tab's load), clamped 30%–300%, and persisted

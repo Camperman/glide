@@ -23,6 +23,23 @@ export interface Shortcut {
   id: string
   label: string
   url: string
+  /** Cached favicon URL for the app rail (captured from the loaded page). */
+  favicon?: string
+}
+
+/** An app as shown in the vertical app rail (a shortcut + live state). */
+export interface AppInfo {
+  id: string
+  label: string
+  favicon?: string
+  unread: number
+}
+
+/** Drives the app rail: the profile's apps + which one is currently active. */
+export interface AppsState {
+  accountId: string
+  apps: AppInfo[]
+  activeShortcutId?: string
 }
 
 export interface ShortcutInput {
@@ -56,6 +73,9 @@ export interface TabInfo {
   id: string
   title: string
   active: boolean
+  favicon?: string
+  /** The app (shortcut) this tab was opened from, if any. */
+  shortcutId?: string
 }
 
 /** Open tabs for the active account (drives the tab strip). */
@@ -83,6 +103,9 @@ export interface GlideApi {
   /** Subscribe to per-account unread-count changes. Returns an unsubscribe fn. */
   onUnread(cb: (update: { id: string; count: number }) => void): () => void
   getShortcuts(accountId: string): Promise<Shortcut[]>
+  getApps(accountId: string): Promise<{ apps: AppInfo[]; activeShortcutId?: string }>
+  /** Subscribe to the active profile's app rail state. Returns an unsubscribe fn. */
+  onAppsState(cb: (state: AppsState) => void): () => void
   addShortcut(accountId: string, input: ShortcutInput): Promise<void>
   updateShortcut(accountId: string, shortcutId: string, patch: ShortcutPatch): Promise<void>
   removeShortcut(accountId: string, shortcutId: string): Promise<void>

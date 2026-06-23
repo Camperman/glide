@@ -35,6 +35,7 @@ export function registerIpc(accounts: AccountManager): void {
   ipcMain.handle('shortcuts:list', (_event, accountId: string) =>
     accounts.shortcutsFor(accountId)
   )
+  ipcMain.handle('apps:list', (_event, accountId: string) => accounts.getApps(accountId))
   ipcMain.handle('shortcuts:add', (_event, accountId: string, input: ShortcutInput) =>
     accounts.addShortcut(accountId, input)
   )
