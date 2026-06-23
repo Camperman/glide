@@ -15,7 +15,7 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 7 | Notifications + keyboard shortcuts | ✅ (1 sub-item deferred — see note) |
 | 8 | Local macOS packaging (Glide.app) | ✅ |
 | 9 | Per-profile shortcuts bar | ✅ |
-| — | Real multi-tab browsing | ⬜ (deferred — user chose "tabs later") |
+| 10 | Shortcuts → persistent tabs (lazy, closeable) | ✅ |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining work is optional polish
@@ -71,17 +71,29 @@ isolated preload as a conscious, documented tradeoff.
 - **Phase 6:** With Gmail logged in, a sidebar avatar shows a red unread badge
   matching the inbox's `Inbox (N)` count; read/receive mail → the badge updates
   live, including for accounts you aren't currently viewing; clears at zero.
-- **Phase 9:** With a profile active, the shortcuts row shows Mail/Calendar/Drive/
-  etc.; click one → that profile navigates there (still logged into that account).
-  Switch profiles → the row swaps to that profile's shortcuts. `[+]` adds a
-  shortcut (e.g. a specific Drive folder URL); right-click → Edit/Remove. Changes
-  persist across restart and are independent per profile.
+- **Phase 9/10:** With a profile active, click Mail then Calendar then back to Mail
+  → Mail is NOT reloaded (it stayed live in its tab). The active pill is
+  highlighted; open pills show an ×. Click × (or right-click → Close tab) → that
+  tab unloads (reopening reloads it). `[+]` adds a shortcut; right-click → Edit/
+  Remove. Switch profiles → each keeps its own open tabs alive in the background.
+  Open which tab is active persists across restart (per profile).
 - **Phase 7:** Receiving mail in any account produces a native macOS notification
   (you may need to approve Glide in System Settings → Notifications on first run).
   Press Cmd-1 / Cmd-2 / … → switches to the 1st / 2nd / … account, even when an
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Phase 10 — ✅ Shortcuts became persistent tabs.** Reworked `AccountManager`
+  from one view per account to a per-account **tab model**: each shortcut can open
+  its own live `WebContentsView` (all tabs share the account's session partition,
+  so every service stays logged into the same account). Tabs are **lazy** (created
+  on first click), **stay loaded** (clicking Mail↔Calendar no longer reloads), and
+  are **closeable** (× on the pill, or right-click → Close tab) to reclaim memory.
+  The shortcuts bar is now a tab strip (open/active states). New IPC
+  (`tabs:open/close/list` + `tabs:state` push), `NavState.tabId`, persisted
+  `activeShortcutId`. Nav/unread/avatar/overlay all operate on the active tab.
+  Isolation still holds (per-account partition, shared by that account's tabs).
+  guard + build + smoke + isolation pass.
 - **Polish — ✅ Dedicated title bar (Shift-style layout).** Reworked the chrome
   into three stacked strips: a 30px draggable black **title bar** at the very top
   (traffic lights on its left, shows the active page/account title centered), then

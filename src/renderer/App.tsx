@@ -28,6 +28,8 @@ export function App(): JSX.Element {
   const [unread, setUnread] = useState<Record<string, number>>({})
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([])
   const [shortcutDialog, setShortcutDialog] = useState<ShortcutDialogState | null>(null)
+  const [openTabs, setOpenTabs] = useState<string[]>([])
+  const [activeTab, setActiveTab] = useState<string | undefined>()
 
   useEffect(() => {
     void window.glide.listAccounts().then(setAccounts)
@@ -42,6 +44,15 @@ export function App(): JSX.Element {
     const offShortcuts = window.glide.onShortcutsUpdated(({ accountId, shortcuts: next }) =>
       setActiveId((current) => {
         if (accountId === current) setShortcuts(next)
+        return current
+      })
+    )
+    const offTabs = window.glide.onTabsState(({ accountId, open, active }) =>
+      setActiveId((current) => {
+        if (accountId === current) {
+          setOpenTabs(open)
+          setActiveTab(active)
+        }
         return current
       })
     )
@@ -60,6 +71,7 @@ export function App(): JSX.Element {
       offNav()
       offUnread()
       offShortcuts()
+      offTabs()
       offList()
       offEditAccount()
       offEditShortcut()
@@ -67,10 +79,19 @@ export function App(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Load the active profile's shortcuts whenever the active account changes.
+  // Load the active profile's shortcuts + tab state when the active account changes.
   useEffect(() => {
-    if (activeId) void window.glide.getShortcuts(activeId).then(setShortcuts)
-    else setShortcuts([])
+    if (!activeId) {
+      setShortcuts([])
+      setOpenTabs([])
+      setActiveTab(undefined)
+      return
+    }
+    void window.glide.getShortcuts(activeId).then(setShortcuts)
+    void window.glide.getTabs(activeId).then(({ open, active }) => {
+      setOpenTabs(open)
+      setActiveTab(active)
+    })
   }, [activeId])
 
   // A native view paints above DOM, so hide the active web view while a modal
@@ -167,8 +188,15 @@ export function App(): JSX.Element {
           />
           <ShortcutsBar
             shortcuts={shortcuts}
+            openIds={openTabs}
+            activeId={activeTab}
             disabled={!activeId}
-            onOpen={(url) => void window.glide.navigate(url)}
+            onOpen={(shortcutId) => {
+              if (activeId) void window.glide.openShortcut(activeId, shortcutId)
+            }}
+            onClose={(shortcutId) => {
+              if (activeId) void window.glide.closeTab(activeId, shortcutId)
+            }}
             onAdd={openAddShortcut}
             onContextMenu={(shortcutId) => {
               if (activeId) void window.glide.showShortcutMenu(activeId, shortcutId)

@@ -12,6 +12,7 @@ export interface PersistedAccount {
   order: number
   shortcuts?: Shortcut[]
   avatarUrl?: string
+  activeShortcutId?: string
 }
 
 export interface WindowBounds {

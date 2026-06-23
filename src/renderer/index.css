@@ -238,33 +238,75 @@ body {
   white-space: nowrap;
 }
 
+/* Each pill is a tab. Closed = outline; open = filled; active = accent border. */
 .shortcut {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
   height: 26px;
-  padding: 0 12px;
   border-radius: 13px;
   border: 1px solid #3a3e47;
-  background: #23262d;
+  background: transparent;
   color: var(--text);
   font-size: 12px;
+  overflow: hidden;
+}
+
+.shortcut--open {
+  background: #23262d;
+}
+
+.shortcut--active {
+  border-color: var(--accent);
+  background: #2b313d;
+}
+
+.shortcut__label {
+  height: 100%;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
   cursor: pointer;
-  transition: background 0.12s ease;
 }
 
-.shortcut:hover:not(:disabled) {
-  background: #2f333b;
-}
-
-.shortcut:disabled {
+.shortcut__label:disabled {
   opacity: 0.4;
   cursor: default;
 }
 
+.shortcut:hover:not(.shortcut--active) {
+  border-color: #565c68;
+}
+
+.shortcut__close {
+  height: 100%;
+  padding: 0 8px 0 2px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.shortcut__close:hover {
+  color: var(--text);
+}
+
 .shortcut--add {
   width: 26px;
+  justify-content: center;
   padding: 0;
   font-size: 15px;
   color: var(--muted);
+  cursor: pointer;
+}
+
+.shortcut--add:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .content {

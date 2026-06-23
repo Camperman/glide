@@ -43,10 +43,19 @@ export interface TestCookie {
 /** Navigation state of the active account view, pushed to the top bar. */
 export interface NavState {
   accountId: string
+  /** The active tab (shortcut id) within the account. */
+  tabId: string
   url: string
   canGoBack: boolean
   canGoForward: boolean
   title: string
+}
+
+/** Open tabs + active tab for the active account (drives the tab strip). */
+export interface TabsState {
+  accountId: string
+  open: string[]
+  active?: string
 }
 
 /** The bridge exposed on `window.glide` in the renderer (see preload). */
@@ -71,6 +80,13 @@ export interface GlideApi {
   addShortcut(accountId: string, input: ShortcutInput): Promise<void>
   updateShortcut(accountId: string, shortcutId: string, patch: ShortcutPatch): Promise<void>
   removeShortcut(accountId: string, shortcutId: string): Promise<void>
+  /** Open or focus (no reload) the tab for a shortcut. */
+  openShortcut(accountId: string, shortcutId: string): Promise<void>
+  /** Close (unload) a shortcut's tab. */
+  closeTab(accountId: string, shortcutId: string): Promise<void>
+  getTabs(accountId: string): Promise<{ open: string[]; active?: string }>
+  /** Subscribe to the active account's open/active tab set. Returns an unsubscribe fn. */
+  onTabsState(cb: (state: TabsState) => void): () => void
   /** Subscribe to a profile's shortcut list changing. Returns an unsubscribe fn. */
   onShortcutsUpdated(cb: (update: { accountId: string; shortcuts: Shortcut[] }) => void): () => void
   /** Open the native right-click menu for an account (floats above the web view). */

@@ -14,10 +14,10 @@ interface TopBarProps {
 export function TopBar({ nav, onBack, onForward, onReload, onNavigate }: TopBarProps): JSX.Element {
   const [value, setValue] = useState(nav?.url ?? '')
 
-  // Follow the active view's URL as it navigates / switches accounts.
+  // Follow the active view's URL as it navigates / switches accounts or tabs.
   useEffect(() => {
     setValue(nav?.url ?? '')
-  }, [nav?.url, nav?.accountId])
+  }, [nav?.url, nav?.accountId, nav?.tabId])
 
   const submit = (e: FormEvent): void => {
     e.preventDefault()

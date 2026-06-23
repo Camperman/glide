@@ -84,7 +84,8 @@ function createWindow(): void {
       homeUrl: a.homeUrl,
       lastUrl: a.lastUrl,
       shortcuts: a.shortcuts,
-      avatarUrl: a.avatarUrl
+      avatarUrl: a.avatarUrl,
+      activeShortcutId: a.activeShortcutId
     }))
   accounts.load(configs)
 
