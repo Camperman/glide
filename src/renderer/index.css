@@ -1,6 +1,12 @@
 :root {
-  --sidebar-bg: #15171c;
-  --content-bg: #1b1d22;
+  /* Shift-style palette: black chrome (title bar + URL bar), dark-gray panels
+     (sidebar + bookmarks/tab strip). */
+  --chrome-black: #0b0b0d;
+  --panel-bg: #202124;
+  --omnibox-bg: #2b2c2f;
+  --hairline: #000000;
+  --sidebar-bg: #202124;
+  --content-bg: #202124;
   --text: #e6e8ec;
   --muted: #9aa0aa;
   --accent: #4c8bf5;
@@ -38,7 +44,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--sidebar-bg);
+  background: var(--chrome-black);
   -webkit-app-region: drag;
 }
 
@@ -177,8 +183,8 @@ body {
   align-items: center;
   gap: 4px;
   padding: 0 8px;
-  background: var(--sidebar-bg);
-  border-bottom: 1px solid #2a2d34;
+  background: var(--chrome-black);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .topbar__btn {
@@ -210,11 +216,11 @@ body {
 .topbar__address input {
   flex: 1;
   height: 30px;
-  border-radius: 8px;
-  border: 1px solid #2a2d34;
-  background: #1b1d22;
+  border-radius: 15px;
+  border: 1px solid transparent;
+  background: var(--omnibox-bg);
   color: var(--text);
-  padding: 0 12px;
+  padding: 0 14px;
   font-size: 13px;
   outline: none;
 }
@@ -232,8 +238,8 @@ body {
   align-items: center;
   gap: 6px;
   padding: 0 8px;
-  background: var(--content-bg);
-  border-bottom: 1px solid #2a2d34;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--hairline);
   overflow-x: auto;
   white-space: nowrap;
 }

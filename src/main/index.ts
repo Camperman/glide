@@ -45,7 +45,7 @@ function createWindow(): void {
     y: state.window?.y,
     title: 'Glide',
     show: false,
-    backgroundColor: '#15171c',
+    backgroundColor: '#0b0b0d',
     // Black, frameless-feeling title bar: hide the native bar and let our dark
     // chrome run to the top, with the traffic lights floating over the sidebar.
     titleBarStyle: 'hiddenInset',
