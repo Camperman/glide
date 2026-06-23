@@ -12,17 +12,25 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 4 | Account management UI (add/remove/edit) | ✅ |
 | 5 | Browser chrome (navigation) | ✅ |
 | 6 | Visual identity + unread badges | ✅ |
-| 7 | Notifications + keyboard shortcuts | ⬜ |
+| 7 | Notifications + keyboard shortcuts | ✅ (1 sub-item deferred — see note) |
 | 8+ | Optional polish | ⬜ (only if requested) |
 
 ## Next up
-**Phase 7 — Notifications + keyboard shortcuts (completes the "first complete cut").**
-Allow the `notifications` permission per account session
-(`session.setPermissionRequestHandler`); confirm Google notifications surface as
-native macOS notifications. A background account with activity shows a dot/badge
-(unread already covers part of this). Clicking a notification focuses the window
-and switches to the originating account. Add Cmd-1 … Cmd-9 (via Electron
-`globalShortcut` or an app `Menu` accelerator) to switch to the Nth account.
+**First complete cut (Phases 0–7) is done.** Remaining work is optional polish
+(Phase 8+ in REQUIREMENTS.md §5) — only build on request. Candidates: notification
+click-to-switch (see deferral note below), per-account mute/notification rules,
+remember scroll position, zoom, download handling, auto-fetched Google avatars.
+
+### Deferred from Phase 7 (intentional)
+**Notification click → switch to that account.** Reliable mapping of an HTML5
+`Notification` click back to its originating account requires injecting script
+into the Google page (e.g. wrapping `window.Notification`). That means a preload
+on the account views — which REQUIREMENTS.md §4.1/§7 explicitly forbid (account
+views are untrusted remote content: no preload, no node integration). Rather than
+violate that hard constraint, this is left for a future decision. The background-
+activity signal it was meant to provide is already covered by the live unread
+badges (Phase 6). If wanted, revisit as Phase 8 with a minimal, notification-only
+isolated preload as a conscious, documented tradeoff.
 
 ## Pending manual checks (need a real Google login)
 - **Phase 1:** Run `npm start`, log into Gmail in the account pane, quit, relaunch
@@ -51,8 +59,22 @@ and switches to the originating account. Add Cmd-1 … Cmd-9 (via Electron
 - **Phase 6:** With Gmail logged in, a sidebar avatar shows a red unread badge
   matching the inbox's `Inbox (N)` count; read/receive mail → the badge updates
   live, including for accounts you aren't currently viewing; clears at zero.
+- **Phase 7:** Receiving mail in any account produces a native macOS notification
+  (you may need to approve Glide in System Settings → Notifications on first run).
+  Press Cmd-1 / Cmd-2 / … → switches to the 1st / 2nd / … account, even when an
+  account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Phase 7 — ✅ (1 sub-item deferred)** Per-account session permission handlers
+  grant notifications (+ media for Meet, clipboard, fullscreen, pointer lock) and
+  deny the rest, so Google notifications surface as native macOS notifications. An
+  application menu (`menu.ts`) adds Cmd-1 … Cmd-9 accelerators → `setActiveByIndex`
+  to switch accounts, alongside standard appMenu/editMenu/windowMenu roles (so
+  copy/paste still work in the web views). Background-activity indication is
+  provided by the Phase 6 unread badges. Notification click-to-switch is
+  intentionally deferred (no-preload constraint — see "Deferred" note above).
+  guard + build + smoke + isolation pass. Notification delivery + Cmd-N switching
+  are manual checks (GUI).
 - **Phase 6 — ✅** Unread badges: `AccountManager` watches every view's
   `page-title-updated` (incl. background accounts), parses a leading `(\d+)` from
   the title (`parseUnread`), stores per-account counts, and pushes

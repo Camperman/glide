@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { AccountManager, type AccountConfig } from './accounts'
 import { registerIpc } from './ipc'
+import { buildAppMenu } from './menu'
 import { loadState, saveState, type PersistedState } from './persistence'
 
 // Give Glide its own userData directory (unpackaged Electron otherwise shares
@@ -82,6 +83,8 @@ function createWindow(): void {
   accounts.load(configs)
 
   if (state.activeAccountId) accounts.setActive(state.activeAccountId)
+
+  buildAppMenu((index) => accounts?.setActiveByIndex(index))
 }
 
 app.whenReady().then(() => {

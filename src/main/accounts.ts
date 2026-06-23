@@ -8,6 +8,18 @@ export const SIDEBAR_WIDTH = 64
 // same strip in CSS (.topbar); keep these in sync.
 export const TOP_BAR_HEIGHT = 44
 
+// Permissions granted to account sessions. Notifications is the headline one;
+// media covers Google Meet camera/mic. Everything else is denied.
+const GRANTED_PERMISSIONS = new Set([
+  'notifications',
+  'media',
+  'mediaKeySystem',
+  'clipboard-read',
+  'clipboard-sanitized-write',
+  'fullscreen',
+  'pointerLock'
+])
+
 export interface AccountConfig {
   id: string
   label: string
@@ -129,14 +141,23 @@ export class AccountManager {
   createAccount(config: AccountConfig): void {
     if (this.views.has(config.id)) return
 
+    const part = partitionFor(config.id)
     const view = new WebContentsView({
       webPreferences: {
-        partition: partitionFor(config.id),
+        partition: part,
         contextIsolation: true,
         nodeIntegration: false
       }
     })
     view.setBackgroundColor('#ffffff')
+
+    // Allow the permissions Google web apps need (notably notifications, plus
+    // camera/mic for Meet) per account session; deny exotic ones.
+    const ses = session.fromPartition(part)
+    ses.setPermissionRequestHandler((_wc, permission, callback) =>
+      callback(GRANTED_PERMISSIONS.has(permission))
+    )
+    ses.setPermissionCheckHandler((_wc, permission) => GRANTED_PERMISSIONS.has(permission))
 
     const startUrl = config.lastUrl ?? config.homeUrl
     const managed: ManagedView = { config, view, currentUrl: startUrl, unread: 0 }
@@ -200,6 +221,12 @@ export class AccountManager {
 
   getActiveId(): string | undefined {
     return this.activeId
+  }
+
+  /** Switch to the Nth account (0-based) — backs the Cmd-1…9 shortcuts. */
+  setActiveByIndex(index: number): void {
+    const id = this.order[index]
+    if (id) this.setActive(id)
   }
 
   private activeWebContents(): WebContents | undefined {
