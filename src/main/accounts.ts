@@ -1,4 +1,12 @@
-import { BrowserWindow, Menu, WebContents, WebContentsView, session, shell } from 'electron'
+import {
+  BrowserWindow,
+  Menu,
+  WebContents,
+  WebContentsView,
+  desktopCapturer,
+  session,
+  shell
+} from 'electron'
 import { randomUUID } from 'crypto'
 import type {
   AccountPatch,
@@ -214,6 +222,19 @@ export class AccountManager {
       callback(GRANTED_PERMISSIONS.has(permission))
     )
     ses.setPermissionCheckHandler((_wc, permission) => GRANTED_PERMISSIONS.has(permission))
+
+    // Enable screen sharing (Google Meet getDisplayMedia). On macOS 15+ the
+    // native system picker is used; otherwise we fall back to sharing the
+    // primary screen. Requires the OS "Screen Recording" permission for Glide.
+    ses.setDisplayMediaRequestHandler(
+      (_request, callback) => {
+        desktopCapturer
+          .getSources({ types: ['screen', 'window'] })
+          .then((sources) => callback(sources.length ? { video: sources[0] } : {}))
+          .catch(() => callback({}))
+      },
+      { useSystemPicker: true }
+    )
 
     const meta: AccountMeta = {
       id: config.id,

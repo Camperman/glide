@@ -98,6 +98,13 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Fix — ✅ Screen sharing (Google Meet).** Electron rejects `getDisplayMedia`
+  unless the app provides a display-media handler, so Meet's "share screen"
+  failed. Added `session.setDisplayMediaRequestHandler` per account session with
+  `{ useSystemPicker: true }` (native macOS 15+ picker) and a `desktopCapturer`
+  fallback (primary screen). Still requires the OS **Screen Recording** permission
+  for Glide (System Settings → Privacy & Security → Screen Recording) — manual,
+  granted once. guard + build + smoke (×2) + isolation pass.
 - **Fix — ✅ Google login popup hands session back.** OAuth sign-in opens a
   popup (`accounts.google.com`, sharing the account partition); after it closes
   the opener now reloads, so the completed login is reflected in the main view
