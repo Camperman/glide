@@ -98,6 +98,16 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Polish — ✅ Memory savings (lazy windows + idle discard).** Two levers, no hit
+  to the active workflow: (1) the **first window stays eager** (loads all profiles
+  → full unread badges + instant switching) while **additional windows are lazy**
+  (load a profile only on first switch) — fixes the multi-window memory doubling;
+  (2) **idle background views auto-discard** after 30 min unused (5-min sweep,
+  timer `unref`'d) and rebuild on next activation from the tab's `currentUrl`. Tabs
+  gained an optional `view` (undefined = discarded) + `lastActive`; the visible tab
+  is never discarded and its timestamp is refreshed each sweep. Title/favicon/unread
+  persist on the tab record across discard, so badges/tab labels survive. guard +
+  build + smoke (×2) + isolation pass.
 - **Phase 12 — ✅ Multiple windows (Cmd-N).** Refactored `AccountManager` from
   single-window to multi-window: account **metadata + app settings are shared**
   (one source of truth, single persistence writer), while **tabs / active profile

@@ -27,6 +27,11 @@ export const BOOKMARKS_BAR_HEIGHT = 36
 
 const NEW_TAB_URL = 'https://www.google.com'
 
+// Idle background views are discarded (unloaded) after this long to save memory,
+// then reloaded on return. The active/visible view is never discarded.
+const DISCARD_IDLE_MS = 30 * 60 * 1000
+const DISCARD_SWEEP_MS = 5 * 60 * 1000
+
 function defaultShortcuts(): Shortcut[] {
   return [
     { label: 'Mail', url: 'https://mail.google.com' },
@@ -73,14 +78,17 @@ interface AccountMeta {
   avatarUrl?: string
 }
 
-/** One open browser tab within an account, in a specific window. */
+/** One open browser tab within an account, in a specific window. `view` is
+ *  undefined when the tab is discarded (unloaded for memory); it's recreated on
+ *  next activation from `currentUrl`. `lastActive` drives idle discarding. */
 interface Tab {
   id: string
-  view: WebContentsView
+  view?: WebContentsView
   currentUrl: string
   title: string
   favicon?: string
   originShortcutId?: string
+  lastActive: number
 }
 
 /** Per-window state for a single account (its open tabs in that window). */
@@ -179,6 +187,8 @@ export class AccountManager {
 
   constructor(onState?: () => void) {
     this.onState = onState
+    const timer = setInterval(() => this.discardIdle(), DISCARD_SWEEP_MS)
+    timer.unref?.() // don't keep the process alive just for the sweep
   }
 
   // ---- metadata loading -------------------------------------------------
@@ -214,15 +224,19 @@ export class AccountManager {
 
   /** Register a new BrowserWindow: build its views and wire its handlers. */
   registerWindow(win: BrowserWindow, defaultActiveId?: string): void {
+    // The first window is eager (loads every profile up front, so all unread
+    // badges show and switching is instant). Additional windows are lazy —
+    // they load a profile only when you first switch to it — to save memory.
+    const eager = this.windows.size === 0
     const ws: WindowState = { win, overlayOpen: false, perAccount: new Map() }
     this.windows.set(win.id, ws)
 
     win.on('resize', () => this.layout(ws))
     win.on('closed', () => this.unregisterWindow(win.id))
 
-    // Eagerly open each account's initial tab in this window so the sidebar
-    // shows unread badges for all accounts and switching is instant.
-    for (const id of this.order) this.ensureLoaded(ws, id)
+    if (eager) {
+      for (const id of this.order) this.ensureLoaded(ws, id)
+    }
 
     const initial = defaultActiveId && this.accounts.has(defaultActiveId) ? defaultActiveId : this.order[0]
     if (initial) this.setActive(win, initial)
@@ -232,7 +246,7 @@ export class AccountManager {
     const ws = this.windows.get(winId)
     if (!ws) return
     for (const wa of ws.perAccount.values()) {
-      for (const tab of wa.tabs) this.destroyView(ws, tab.view)
+      for (const tab of wa.tabs) if (tab.view) this.destroyView(ws, tab.view)
     }
     this.windows.delete(winId)
   }
@@ -274,13 +288,27 @@ export class AccountManager {
     url: string,
     originShortcutId?: string
   ): Tab {
+    const tab: Tab = {
+      id: randomUUID(),
+      currentUrl: url,
+      title: '',
+      originShortcutId,
+      lastActive: Date.now()
+    }
+    this.createView(ws, accountId, tab)
+    this.accountState(ws, accountId).tabs.push(tab)
+    return tab
+  }
+
+  /** Build (or rebuild, after a discard) the live view for a tab record. */
+  private createView(ws: WindowState, accountId: string, tab: Tab): void {
     const part = partitionFor(accountId)
     const view = new WebContentsView({
       webPreferences: { partition: part, contextIsolation: true, nodeIntegration: false }
     })
     view.setBackgroundColor('#ffffff')
     const wc = view.webContents
-    const tab: Tab = { id: randomUUID(), view, currentUrl: url, title: '', originShortcutId }
+    tab.view = view
 
     const isActiveTab = (): boolean =>
       ws.activeAccountId === accountId &&
@@ -346,10 +374,41 @@ export class AccountManager {
 
     view.setVisible(false)
     ws.win.contentView.addChildView(view)
-    void wc.loadURL(url)
+    void wc.loadURL(tab.currentUrl)
+  }
 
-    this.accountState(ws, accountId).tabs.push(tab)
-    return tab
+  /** Ensure the active tab has a live view (rebuild if discarded) and mark used. */
+  private materializeActive(ws: WindowState): void {
+    if (!ws.activeAccountId) return
+    const wa = ws.perAccount.get(ws.activeAccountId)
+    if (!wa?.activeTabId) return
+    const tab = wa.tabs.find((t) => t.id === wa.activeTabId)
+    if (!tab) return
+    if (!tab.view) this.createView(ws, ws.activeAccountId, tab)
+    tab.lastActive = Date.now()
+  }
+
+  /** Unload background views idle longer than the threshold to reclaim memory. */
+  private discardIdle(): void {
+    const now = Date.now()
+    for (const ws of this.allWindows()) {
+      const visibleTabId = ws.activeAccountId
+        ? ws.perAccount.get(ws.activeAccountId)?.activeTabId
+        : undefined
+      for (const [accountId, wa] of ws.perAccount) {
+        for (const tab of wa.tabs) {
+          const visible = accountId === ws.activeAccountId && tab.id === visibleTabId
+          if (visible) {
+            tab.lastActive = now // keep the on-screen view fresh
+            continue
+          }
+          if (tab.view && now - tab.lastActive > DISCARD_IDLE_MS) {
+            this.destroyView(ws, tab.view)
+            tab.view = undefined
+          }
+        }
+      }
+    }
   }
 
   newTab(win: BrowserWindow, accountId: string): void {
@@ -391,7 +450,8 @@ export class AccountManager {
     const wa = this.accountState(ws, accountId)
     const index = wa.tabs.findIndex((t) => t.id === tabId)
     if (index === -1) return
-    this.destroyView(ws, wa.tabs[index].view)
+    const view = wa.tabs[index].view
+    if (view) this.destroyView(ws, view)
     wa.tabs.splice(index, 1)
     if (wa.activeTabId === tabId) {
       const neighbour = wa.tabs[index] ?? wa.tabs[index - 1]
@@ -476,7 +536,7 @@ export class AccountManager {
     for (const ws of this.allWindows()) {
       const wa = ws.perAccount.get(id)
       if (wa) {
-        for (const tab of wa.tabs) this.destroyView(ws, tab.view)
+        for (const tab of wa.tabs) if (tab.view) this.destroyView(ws, tab.view)
         ws.perAccount.delete(id)
       }
       if (ws.activeAccountId === id) {
@@ -543,7 +603,7 @@ export class AccountManager {
     this.zoomFactor = Math.round(Math.min(3, Math.max(0.3, factor)) * 100) / 100
     for (const ws of this.allWindows()) {
       for (const wa of ws.perAccount.values()) {
-        for (const tab of wa.tabs) tab.view.webContents.setZoomFactor(this.zoomFactor)
+        for (const tab of wa.tabs) tab.view?.webContents.setZoomFactor(this.zoomFactor)
       }
     }
     this.onState?.()
@@ -653,7 +713,7 @@ export class AccountManager {
 
   private activeWc(win: BrowserWindow): WebContents | undefined {
     const ws = this.wsFor(win)
-    return ws ? this.activeTab(ws)?.view.webContents : undefined
+    return ws ? this.activeTab(ws)?.view?.webContents : undefined
   }
 
   goBack(win: BrowserWindow): void {
@@ -679,7 +739,7 @@ export class AccountManager {
     const ws = this.wsFor(win)
     if (!ws || !ws.activeAccountId) return null
     const tab = this.activeTab(ws)
-    if (!tab) return null
+    if (!tab || !tab.view) return null
     const wc = tab.view.webContents
     return {
       accountId: ws.activeAccountId,
@@ -893,8 +953,10 @@ export class AccountManager {
   }
 
   private refreshVisibility(ws: WindowState): void {
+    this.materializeActive(ws)
     for (const [accountId, wa] of ws.perAccount) {
       for (const tab of wa.tabs) {
+        if (!tab.view) continue // discarded → already not visible
         const visible =
           accountId === ws.activeAccountId && tab.id === wa.activeTabId && !ws.overlayOpen
         tab.view.setVisible(visible)
@@ -906,7 +968,7 @@ export class AccountManager {
     if (ws.win.isDestroyed()) return
     const [width, height] = ws.win.getContentSize()
     const tab = this.activeTab(ws)
-    if (!tab) return
+    if (!tab || !tab.view) return
     const left = this.contentLeft()
     const top = this.topChrome()
     tab.view.setBounds({
