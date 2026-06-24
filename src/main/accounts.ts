@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, WebContents, WebContentsView, session } from 'electron'
+import { BrowserWindow, Menu, WebContents, WebContentsView, session, shell } from 'electron'
 import { randomUUID } from 'crypto'
 import type {
   AccountPatch,
@@ -154,6 +154,17 @@ function hostOf(url: string): string {
   } catch {
     return ''
   }
+}
+
+/** True for app-protocol links (zoommtg:, mailto:, msteams:, tel:, …) that the
+ *  OS should open in their native app rather than the in-app browser. */
+export function isExternalProtocol(url: string): boolean {
+  const match = /^([a-z][a-z0-9+.-]*):/i.exec(url)
+  if (!match) return false
+  const scheme = match[1].toLowerCase()
+  return !['http', 'https', 'about', 'blob', 'data', 'file', 'chrome', 'devtools', 'filesystem'].includes(
+    scheme
+  )
 }
 
 function findFolder(nodes: BookmarkNode[], id: string): BookmarkFolder | undefined {
@@ -365,12 +376,27 @@ export class AccountManager {
       }
     })
 
-    wc.setWindowOpenHandler(() => ({
-      action: 'allow',
-      overrideBrowserWindowOptions: {
-        webPreferences: { partition: part, contextIsolation: true, nodeIntegration: false }
+    wc.setWindowOpenHandler(({ url }) => {
+      // App-protocol popups (e.g. zoommtg://) → hand off to the OS / native app.
+      if (isExternalProtocol(url)) {
+        void shell.openExternal(url).catch(() => {})
+        return { action: 'deny' }
       }
-    }))
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          webPreferences: { partition: part, contextIsolation: true, nodeIntegration: false }
+        }
+      }
+    })
+
+    // In-page navigations to app protocols (Zoom's "launch meeting", mailto, …).
+    wc.on('will-navigate', (e, url) => {
+      if (isExternalProtocol(url)) {
+        e.preventDefault()
+        void shell.openExternal(url).catch(() => {})
+      }
+    })
 
     view.setVisible(false)
     ws.win.contentView.addChildView(view)
@@ -667,6 +693,15 @@ export class AccountManager {
     const folder = findFolder(meta.bookmarks, folderId)
     if (!folder) return
     Menu.buildFromTemplate(this.bookmarkMenu(win, accountId, folder.children)).popup({ window: win })
+  }
+
+  /** Popup menu for bookmark-bar items that don't fit (the "More" » button). */
+  openBookmarksOverflow(win: BrowserWindow, accountId: string, ids: string[]): void {
+    const meta = this.accounts.get(accountId)
+    if (!meta) return
+    const nodes = meta.bookmarks.filter((n) => ids.includes(n.id))
+    if (nodes.length === 0) return
+    Menu.buildFromTemplate(this.bookmarkMenu(win, accountId, nodes)).popup({ window: win })
   }
 
   private bookmarkMenu(

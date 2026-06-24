@@ -70,6 +70,8 @@ const api: GlideApi = {
   openBookmark: (accountId, url) => ipcRenderer.invoke('bookmarks:open', accountId, url),
   openBookmarkFolder: (accountId, folderId) =>
     ipcRenderer.invoke('bookmarks:open-folder', accountId, folderId),
+  openBookmarksOverflow: (accountId, ids) =>
+    ipcRenderer.invoke('bookmarks:open-overflow', accountId, ids),
   getBookmarksBarVisible: () => ipcRenderer.invoke('bookmarks:bar-visible'),
   onBookmarksBarVisible: (cb) => {
     const listener = (_event: unknown, visible: boolean): void => cb(visible)

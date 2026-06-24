@@ -6,7 +6,8 @@ import type { AppRailLayout, BookmarkNode, Shortcut } from '../shared/types'
 // Settings live in a machine-shared location so any macOS user account on this
 // computer loads the same profiles/apps/bookmarks/layout. (Logins/sessions stay
 // private per macOS user in each user's own userData — not shared.)
-const SHARED_DIR = '/Users/Shared/Glide'
+// Overridable via env so automated tests run against a throwaway dir.
+const SHARED_DIR = process.env.GLIDE_SHARED_DIR || '/Users/Shared/Glide'
 
 export interface PersistedAccount {
   id: string

@@ -98,6 +98,20 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Fix — ✅ External-protocol links + bookmarks overflow + test isolation.**
+  - **Zoom/app links:** `zoommtg://` (and `mailto:`, Teams, `tel:`, …) now hand off
+    to the native app via `shell.openExternal`. Handled in each view's
+    `setWindowOpenHandler` + `will-navigate`, plus a global `web-contents-created`
+    `will-navigate` hook so popup join-pages work too. (`isExternalProtocol` gates
+    non-web schemes.)
+  - **Bookmarks overflow:** the bookmarks bar no longer scrolls — items that don't
+    fit collapse into a "»" More button that opens them as a native menu
+    (`openBookmarksOverflow`). A hidden measurer row gives stable widths so the
+    fitting count doesn't flip-flop.
+  - **Test isolation:** tests now launch against throwaway `GLIDE_USER_DATA_DIR` +
+    `GLIDE_SHARED_DIR` (see `tests/launch.ts`), so they don't collide with a running
+    Glide's single-instance lock and never read/mutate real profiles/settings.
+  - guard + build + smoke (×2) + isolation pass (with the real app running).
 - **Polish — ✅ Memory savings (lazy windows + idle discard).** Two levers, no hit
   to the active workflow: (1) the **first window stays eager** (loads all profiles
   → full unread badges + instant switching) while **additional windows are lazy**

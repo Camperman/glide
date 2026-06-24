@@ -1,14 +1,12 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import { join } from 'path'
+import { test, expect } from '@playwright/test'
+import { launchGlide } from './launch'
 
 // The headline requirement (REQUIREMENTS.md §6.2): per-account sessions must be
 // fully isolated. A cookie set in one account's partition MUST NOT appear in
 // another's, and every account MUST have a distinct partition. This test talks
 // to the main process via window.glide.__test, so it needs no page loads.
 test('account sessions are isolated', async () => {
-  const app = await electron.launch({
-    args: [join(__dirname, '..', 'out', 'main', 'index.js')]
-  })
+  const app = await launchGlide()
 
   const page = await app.firstWindow()
   await expect(page).toHaveTitle(/Glide/)

@@ -150,6 +150,8 @@ export interface GlideApi {
   openBookmark(accountId: string, url: string): Promise<void>
   /** Open a native popup menu for a bookmark folder (handles nested folders). */
   openBookmarkFolder(accountId: string, folderId: string): Promise<void>
+  /** Open a native popup menu for bookmark-bar items that overflow ("More" »). */
+  openBookmarksOverflow(accountId: string, ids: string[]): Promise<void>
   getBookmarksBarVisible(): Promise<boolean>
   onBookmarksBarVisible(cb: (visible: boolean) => void): () => void
   /** Chrome profiles available to import from. */

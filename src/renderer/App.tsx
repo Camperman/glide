@@ -261,6 +261,9 @@ export function App(): JSX.Element {
               onOpenFolder={(folderId) => {
                 if (activeId) void window.glide.openBookmarkFolder(activeId, folderId)
               }}
+              onOpenOverflow={(ids) => {
+                if (activeId) void window.glide.openBookmarksOverflow(activeId, ids)
+              }}
             />
           )}
           <main className="content" data-testid="content">

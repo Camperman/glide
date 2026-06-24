@@ -1,12 +1,10 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import { join } from 'path'
+import { test, expect } from '@playwright/test'
+import { launchGlide } from './launch'
 
 // Phase 0 boot smoke test. Launches the built Electron app and asserts the
 // window opens with the Glide title and the sidebar shell rendered.
 test('boots with a Glide window and sidebar', async () => {
-  const app = await electron.launch({
-    args: [join(__dirname, '..', 'out', 'main', 'index.js')]
-  })
+  const app = await launchGlide()
 
   const window = await app.firstWindow()
   await expect(window).toHaveTitle(/Glide/)
@@ -19,9 +17,7 @@ test('boots with a Glide window and sidebar', async () => {
 
 // Multi-window: a second window opens independently and shares the same app.
 test('opens a second independent window', async () => {
-  const app = await electron.launch({
-    args: [join(__dirname, '..', 'out', 'main', 'index.js')]
-  })
+  const app = await launchGlide()
 
   const first = await app.firstWindow()
   await first.locator('[data-testid="sidebar"]').waitFor()

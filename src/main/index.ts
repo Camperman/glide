@@ -1,7 +1,7 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
 import { randomUUID } from 'crypto'
 import { join } from 'path'
-import { AccountManager, type AccountConfig } from './accounts'
+import { AccountManager, isExternalProtocol, type AccountConfig } from './accounts'
 import { registerIpc } from './ipc'
 import { buildAppMenu } from './menu'
 import { loadState, saveState, type PersistedState } from './persistence'
@@ -9,6 +9,12 @@ import { loadState, saveState, type PersistedState } from './persistence'
 // Give Glide its own userData directory (unpackaged Electron otherwise shares
 // the generic "Electron" dir with every other dev app).
 app.setName('Glide')
+
+// Tests point this at a throwaway dir so they don't collide with (or mutate) a
+// running app's data or single-instance lock. Must run before app is ready.
+if (process.env.GLIDE_USER_DATA_DIR) {
+  app.setPath('userData', process.env.GLIDE_USER_DATA_DIR)
+}
 
 let accounts: AccountManager | undefined
 let state: PersistedState = { version: 1, accounts: [] }
@@ -128,6 +134,17 @@ if (!gotInstanceLock) {
 
 app.on('second-instance', () => {
   if (accounts) createWindow()
+})
+
+// Forward app-protocol links (Zoom, mailto, Teams, …) to the OS from any web
+// contents, including popup windows opened by pages.
+app.on('web-contents-created', (_event, contents) => {
+  contents.on('will-navigate', (e, url) => {
+    if (isExternalProtocol(url)) {
+      e.preventDefault()
+      void shell.openExternal(url).catch(() => {})
+    }
+  })
 })
 
 app.whenReady().then(() => {

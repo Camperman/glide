@@ -452,8 +452,10 @@ body {
   font-size: 15px;
 }
 
-/* Bookmarks bar. Height must match BOOKMARKS_BAR_HEIGHT in accounts.ts. */
+/* Bookmarks bar. Height must match BOOKMARKS_BAR_HEIGHT in accounts.ts.
+   Overflowing items collapse into the » More menu (no scrollbar). */
 .bookmarksbar {
+  position: relative;
   height: 36px;
   flex: 0 0 36px;
   display: flex;
@@ -462,8 +464,26 @@ body {
   padding: 0 8px;
   background: var(--panel-bg);
   border-bottom: 1px solid var(--hairline);
-  overflow-x: auto;
+  overflow: hidden;
   white-space: nowrap;
+}
+
+/* Off-screen row used only to measure item widths. */
+.bookmarksbar__measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 0;
+  display: flex;
+  gap: 2px;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bm--more {
+  flex: 0 0 auto;
+  font-weight: 700;
 }
 
 .bookmarksbar__empty {

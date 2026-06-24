@@ -85,6 +85,10 @@ export function registerIpc(accounts: AccountManager, onNewWindow: () => void): 
     const win = winOf(e)
     if (win) accounts.openBookmarkFolder(win, accountId, folderId)
   })
+  ipcMain.handle('bookmarks:open-overflow', (e, accountId: string, ids: string[]) => {
+    const win = winOf(e)
+    if (win) accounts.openBookmarksOverflow(win, accountId, ids)
+  })
   ipcMain.handle('menu:account', (e, accountId: string) => {
     const win = winOf(e)
     if (win) accounts.popupAccountMenu(win, accountId)
