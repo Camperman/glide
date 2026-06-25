@@ -98,6 +98,12 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Polish — ✅ Rounded content card (Electron 34).** Upgraded Electron 33 → 34
+  for `WebContentsView.setBorderRadius`. Each tab view now has rounded corners
+  (`CONTENT_RADIUS`) and is inset by `CONTENT_INSET` (8px) so the dark-gray chrome
+  forms a gutter/card around the page — the Shift "floating rounded content" look.
+  guard + build + smoke (×2) + isolation pass on Electron 34.5.x. (Note: new
+  Electron major; verified via gates, not GUI.)
 - **Polish — ✅ Unified dark-gray chrome + profile photos fill circle.** Profile
   avatars now fill the circle (neutral fallback bg only behind the letter) with a
   color **ring on the active** profile (the old fill color). Title bar + toolbar

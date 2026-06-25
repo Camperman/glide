@@ -33,6 +33,9 @@ export const APP_RAIL_WIDTH = 84
 export const TITLE_BAR_HEIGHT = 38
 export const TOP_BAR_HEIGHT = 44
 export const BOOKMARKS_BAR_HEIGHT = 36
+// The page floats as a rounded card with a dark-gray chrome gutter around it.
+const CONTENT_INSET = 8
+const CONTENT_RADIUS = 10
 
 const NEW_TAB_URL = 'https://www.google.com'
 
@@ -340,6 +343,7 @@ export class AccountManager {
       webPreferences: { partition: part, contextIsolation: true, nodeIntegration: false }
     })
     view.setBackgroundColor('#ffffff')
+    view.setBorderRadius(CONTENT_RADIUS) // rounded "card" corners (Electron 34+)
     const wc = view.webContents
     tab.view = view
 
@@ -1100,11 +1104,12 @@ export class AccountManager {
     if (!tab || !tab.view) return
     const left = this.contentLeft()
     const top = this.topChrome()
+    const i = CONTENT_INSET
     tab.view.setBounds({
-      x: left,
-      y: top,
-      width: Math.max(0, width - left),
-      height: Math.max(0, height - top)
+      x: left + i,
+      y: top + i,
+      width: Math.max(0, width - left - i * 2),
+      height: Math.max(0, height - top - i * 2)
     })
   }
 
