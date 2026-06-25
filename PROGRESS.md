@@ -98,6 +98,15 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Polish — ✅ Links open as tabs (with right-click → new window).** The window-
+  open handler now routes by disposition: `foreground-tab`/`background-tab` (link /
+  target=_blank opens) become **new tabs** in the current profile; only real
+  popups (`window.open` with size features → `new-window`, e.g. OAuth) still get
+  their own window — so login isn't broken. Added a web-view **right-click menu**
+  (Electron has none by default): on a link → Open in New Tab / Open in New Window
+  / Copy Link; plus cut/copy/paste when editable and Back/Reload otherwise. New
+  window = a bare window in the same profile partition. guard + build + smoke (×2)
+  + isolation pass.
 - **Fix — ✅ Screen sharing (Google Meet).** Electron rejects `getDisplayMedia`
   unless the app provides a display-media handler, so Meet's "share screen"
   failed. Added `session.setDisplayMediaRequestHandler` per account session with

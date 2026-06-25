@@ -3,6 +3,7 @@ import {
   Menu,
   WebContents,
   WebContentsView,
+  clipboard,
   desktopCapturer,
   session,
   shell
@@ -397,10 +398,16 @@ export class AccountManager {
       }
     })
 
-    wc.setWindowOpenHandler(({ url }) => {
+    wc.setWindowOpenHandler(({ url, disposition }) => {
       // App-protocol popups (e.g. zoommtg://) → hand off to the OS / native app.
       if (isExternalProtocol(url)) {
         void shell.openExternal(url).catch(() => {})
+        return { action: 'deny' }
+      }
+      // Link / target=_blank opens become tabs; only real popups (window.open
+      // with size features → 'new-window', e.g. OAuth) get their own window.
+      if (disposition === 'foreground-tab' || disposition === 'background-tab') {
+        this.openLinkTab(ws, accountId, url, disposition === 'background-tab')
         return { action: 'deny' }
       }
       return {
@@ -409,6 +416,36 @@ export class AccountManager {
           webPreferences: { partition: part, contextIsolation: true, nodeIntegration: false }
         }
       }
+    })
+
+    // Right-click menu for links (Electron has no default web context menu).
+    wc.on('context-menu', (_e, params) => {
+      const items: MenuItemConstructorOptions[] = []
+      const link = params.linkURL
+      if (link) {
+        items.push(
+          { label: 'Open Link in New Tab', click: () => this.openLinkTab(ws, accountId, link, false) },
+          { label: 'Open Link in New Window', click: () => this.openLinkInNewWindow(accountId, link) },
+          { label: 'Copy Link', click: () => clipboard.writeText(link) },
+          { type: 'separator' }
+        )
+      }
+      if (params.isEditable) {
+        items.push({ role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' })
+      } else if (params.selectionText) {
+        items.push({ role: 'copy' })
+      }
+      if (items.length === 0) {
+        items.push(
+          {
+            label: 'Back',
+            enabled: wc.navigationHistory.canGoBack(),
+            click: () => wc.navigationHistory.goBack()
+          },
+          { label: 'Reload', click: () => wc.reload() }
+        )
+      }
+      Menu.buildFromTemplate(items).popup({ window: ws.win })
     })
 
     // Popups (auth, compose, …) share this account's partition. When a Google
@@ -479,6 +516,27 @@ export class AccountManager {
     const tab = this.openTab(ws, accountId, NEW_TAB_URL)
     this.accountState(ws, accountId).activeTabId = tab.id
     this.afterTabChange(ws, accountId)
+  }
+
+  /** Open a clicked link as a tab (foreground unless it's a background-tab open). */
+  private openLinkTab(ws: WindowState, accountId: string, url: string, background: boolean): void {
+    const tab = this.openTab(ws, accountId, url)
+    if (!background) this.accountState(ws, accountId).activeTabId = tab.id
+    this.afterTabChange(ws, accountId)
+  }
+
+  /** Open a link in its own bare window (right-click → Open in New Window). */
+  private openLinkInNewWindow(accountId: string, url: string): void {
+    const win = new BrowserWindow({
+      width: 1000,
+      height: 760,
+      webPreferences: {
+        partition: partitionFor(accountId),
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    })
+    void win.loadURL(url)
   }
 
   activateTab(win: BrowserWindow, accountId: string, tabId: string): void {
