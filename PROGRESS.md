@@ -98,6 +98,16 @@ isolated preload as a conscious, documented tradeoff.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Polish — ✅ Unified dark-gray chrome + profile photos fill circle.** Profile
+  avatars now fill the circle (neutral fallback bg only behind the letter) with a
+  color **ring on the active** profile (the old fill color). Title bar + toolbar
+  recolored from black to the **dark-gray panel color**, so all chrome (sidebar,
+  app rail, bookmarks, title bar, toolbar) is one surface; active tab bumped to a
+  lighter shade so it still reads as selected. URL bar capped (`max-width: 680px`)
+  so chrome shows around it. Window bg → dark gray. guard + build + smoke (×2) +
+  isolation pass. **Still pending (needs Electron 34): rounded corners on the
+  native render window** — `WebContentsView.setBorderRadius` landed in Electron 34
+  and we're on 33.
 - **Polish — ✅ Shift-style chrome tweaks.** Profile avatars (and the add-profile
   button) are now **circles** (`border-radius: 50%`); softer **rounded corners**
   across tabs, app rail, modal, buttons, app icons; **folder icon** (inline SVG)

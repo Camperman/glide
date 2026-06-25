@@ -44,7 +44,7 @@ body {
   flex: 0 0 38px;
   display: flex;
   align-items: flex-end;
-  background: var(--chrome-black);
+  background: var(--panel-bg);
   -webkit-app-region: drag;
 }
 
@@ -84,7 +84,7 @@ body {
 }
 
 .tab--active {
-  background: var(--panel-bg);
+  background: var(--omnibox-bg);
   color: var(--text);
 }
 
@@ -197,22 +197,25 @@ body {
   height: 40px;
   border-radius: 50%;
   border: none;
-  background: var(--account-color, #555);
+  /* Neutral fill only shows behind the letter fallback; the photo fills it. */
+  background: #34363b;
   color: #fff;
   font-weight: 700;
   font-size: 16px;
   cursor: pointer;
-  opacity: 0.6;
+  opacity: 0.7;
+  overflow: hidden;
   transition: opacity 0.12s ease, box-shadow 0.12s ease;
 }
 
 .account:hover {
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
+/* Active profile: full opacity + a ring in the profile's color. */
 .account--active {
   opacity: 1;
-  box-shadow: 0 0 0 2px var(--sidebar-bg), 0 0 0 4px var(--account-color, #fff);
+  box-shadow: 0 0 0 2px var(--panel-bg), 0 0 0 4px var(--account-color, #fff);
 }
 
 .account__img {
@@ -255,8 +258,8 @@ body {
   align-items: center;
   gap: 4px;
   padding: 0 8px;
-  background: var(--chrome-black);
-  border-bottom: 1px solid var(--hairline);
+  background: var(--panel-bg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .topbar__btn {
@@ -282,6 +285,7 @@ body {
 
 .topbar__address {
   flex: 1;
+  max-width: 680px;
   display: flex;
 }
 
@@ -467,7 +471,7 @@ body {
   gap: 2px;
   padding: 0 8px;
   background: var(--panel-bg);
-  border-bottom: 1px solid var(--hairline);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   overflow: hidden;
   white-space: nowrap;
 }

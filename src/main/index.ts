@@ -97,7 +97,7 @@ function createWindow(): void {
     y: isFirst ? state.window?.y : undefined,
     title: 'Glide',
     show: false,
-    backgroundColor: '#0b0b0d',
+    backgroundColor: '#202124',
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 14, y: 8 },
     webPreferences: {
