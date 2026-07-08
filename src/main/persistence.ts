@@ -3,10 +3,11 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'f
 import { join } from 'path'
 import type { AppRailLayout, BookmarkNode, Shortcut } from '../shared/types'
 
-// Settings live in a machine-shared location so any macOS user account on this
-// computer loads the same profiles/apps/bookmarks/layout. (Logins/sessions stay
-// private per macOS user in each user's own userData — not shared.)
-// Overridable via env so automated tests run against a throwaway dir.
+// Settings default to the per-user userData dir. On the author's Mac, two macOS
+// users share one config via /Users/Shared/Glide — that mode stays available but
+// is now OPT-IN: it's used only when the shared file already exists (his machine)
+// or GLIDE_SHARED_DIR is set. Fresh installs (friends' Macs) never create a
+// world-writable shared dir. Logins/sessions are always per-user regardless.
 const SHARED_DIR = process.env.GLIDE_SHARED_DIR || '/Users/Shared/Glide'
 
 export interface PersistedAccount {
@@ -53,12 +54,21 @@ export function defaultState(): PersistedState {
   return { version: 1, accounts: DEFAULT_ACCOUNTS.map((a) => ({ ...a })) }
 }
 
-function statePath(): string {
-  return join(SHARED_DIR, 'glide-state.json')
+/** Shared mode is opt-in: explicit env, or the shared file already exists. */
+let sharedModeCache: boolean | undefined
+function sharedMode(): boolean {
+  if (sharedModeCache === undefined) {
+    sharedModeCache =
+      Boolean(process.env.GLIDE_SHARED_DIR) || existsSync(join(SHARED_DIR, 'glide-state.json'))
+  }
+  return sharedModeCache
 }
 
-/** The pre-sharing per-user location, used once to migrate into the shared dir. */
-function legacyStatePath(): string {
+function statePath(): string {
+  return sharedMode() ? join(SHARED_DIR, 'glide-state.json') : perUserStatePath()
+}
+
+function perUserStatePath(): string {
   return join(app.getPath('userData'), 'glide-state.json')
 }
 
@@ -74,21 +84,8 @@ function ensureSharedDir(): void {
   }
 }
 
-/** Load shared state, migrating a legacy per-user file in once, else defaults. */
+/** Load state from the active location (shared if opted in, else per-user). */
 export function loadState(): PersistedState {
-  ensureSharedDir()
-  try {
-    if (!existsSync(statePath()) && existsSync(legacyStatePath())) {
-      writeFileSync(statePath(), readFileSync(legacyStatePath(), 'utf8'), 'utf8')
-      try {
-        chmodSync(statePath(), 0o666)
-      } catch {
-        // ignore
-      }
-    }
-  } catch {
-    // ignore — fall through to normal load
-  }
   try {
     const parsed = JSON.parse(readFileSync(statePath(), 'utf8')) as PersistedState
     if (
@@ -106,17 +103,21 @@ export function loadState(): PersistedState {
 }
 
 /**
- * Best-effort write to the shared config. The file is made world-writable so a
+ * Best-effort write. In shared mode the file is kept world-writable so a
  * different macOS user can update it later. Failures are non-fatal.
  */
 export function saveState(state: PersistedState): void {
   try {
-    ensureSharedDir()
-    writeFileSync(statePath(), JSON.stringify(state, null, 2), 'utf8')
-    try {
-      chmodSync(statePath(), 0o666)
-    } catch {
-      // not the owner (another user created it) — content write already succeeded
+    if (sharedMode()) {
+      ensureSharedDir()
+      writeFileSync(statePath(), JSON.stringify(state, null, 2), 'utf8')
+      try {
+        chmodSync(statePath(), 0o666)
+      } catch {
+        // not the owner (another user created it) — content write already succeeded
+      }
+    } else {
+      writeFileSync(statePath(), JSON.stringify(state, null, 2), 'utf8')
     }
   } catch {
     // ignore

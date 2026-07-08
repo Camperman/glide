@@ -23,6 +23,7 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 15 | Per-account notification mute | ✅ |
 | 16 | Notification click → switch to account | ✅ |
 | 17 | Chrome extensions (Electron 37, electron-chrome-extensions) | ✅ |
+| 18 | Friends-tier distribution (signing/notarization/DMG/GPL) | 🔧 (code done; needs cert + repo publish — see notes) |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining polish explicitly requested
@@ -63,6 +64,30 @@ method instead** — on Google's "Something went wrong / Make sure Bluetooth is
 on" screen, click **Try another way** → "Tap Yes on your phone" (internet-based,
 not BLE) / authenticator code / password / backup code. Sessions persist, so
 this is one-time per account. Revisit only if we ever add Developer-ID signing.
+
+### Phase 18 notes — friends-tier distribution (2026-07-08, in progress)
+Scope approved as a REQUIREMENTS §2.2 exception. Code/config complete:
+- **Per-user settings by default.** `/Users/Shared/Glide` world-writable mode is
+  now opt-in (used only when the shared file already exists — i.e. Brandon's
+  Mac — or `GLIDE_SHARED_DIR` is set). Fresh installs get plain `userData`.
+- **`npm run dist`** → signed, notarized, hardened-runtime **DMG** (arm64).
+  `npm run package` unchanged: fast local unsigned `--dir` build.
+- Entitlements: `build/entitlements.mac.plist` (JIT, mic/camera for Meet,
+  Bluetooth for future passkeys). Notarization reads `APPLE_ID`,
+  `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` env vars.
+- **GPL-3.0**: LICENSE + package.json license field + README (public repo
+  satisfies the electron-chrome-extensions GPL obligation).
+
+**Remaining manual steps (Brandon):**
+1. Create a **Developer ID Application** certificate (Xcode → Settings →
+   Accounts → Manage Certificates → “+”, or developer.apple.com → Certificates)
+   so `security find-identity -v -p codesigning` lists it.
+2. Make an app-specific password at appleid.apple.com; find the Team ID at
+   developer.apple.com → Membership; export the three env vars; `npm run dist`.
+3. First-run check of the DMG on a Mac (or macOS account) without the shared
+   config: app opens without Gatekeeper complaints, per-user settings created.
+4. Publish the repo publicly on GitHub (account TBD) and attach the DMG to a
+   Release.
 
 ### Phase 17 notes — Chrome extensions (2026-07-08)
 Built the "Tier 2" path scoped below. **Electron 34 → 37.10.3** (the version

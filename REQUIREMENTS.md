@@ -63,6 +63,13 @@ exactly how Shift does it.
     app is launched from Finder and is "self-responsible," which macOS demands
     for Bluetooth/FIDO passkey sign-in. Ad-hoc signed, `--dir` only, no DMG, no
     notarization, no auto-update.
+  - **Exception (approved 2026-07-08): "friends-tier" distribution.** Sharing
+    Glide with a few friends IS in scope: Developer-ID signing + hardened
+    runtime + notarization + a DMG (`npm run dist`), per-user settings on
+    machines that haven't opted into the shared-config mode, and a public
+    GPL-3.0 GitHub repo (required by the electron-chrome-extensions license).
+    Still out of scope: auto-update (friends re-download), Windows/Linux,
+    app store, telemetry, licensing/onboarding — this is not a product.
 - ❌ Windows / Linux support (macOS only; do not add cross-platform branches).
 - ❌ Non-Google apps, "Spaces"/app-grouping, Slack/Outlook integrations.
 - ❌ Universal cross-account search.

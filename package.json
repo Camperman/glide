@@ -1,9 +1,10 @@
 {
   "name": "glide",
-  "version": "0.0.0",
-  "description": "Personal multi-account Google workspace browser",
+  "version": "0.1.0",
+  "description": "Multi-account Google workspace browser for macOS",
   "private": true,
-  "author": "bcamp",
+  "license": "GPL-3.0-only",
+  "author": "Brandon Camp",
   "main": "out/main/index.js",
   "scripts": {
     "start": "electron-vite dev",
@@ -13,7 +14,8 @@
     "test:smoke": "playwright test tests/smoke.spec.ts",
     "test:isolation": "playwright test tests/isolation.spec.ts",
     "guard": "node scripts/guard.mjs",
-    "package": "npm run build && electron-builder --dir"
+    "package": "npm run build && electron-builder --dir -c.mac.identity=null -c.mac.notarize=false",
+    "dist": "npm run build && electron-builder"
   },
   "devDependencies": {
     "@playwright/test": "^1.47.0",
@@ -42,7 +44,14 @@
     "mac": {
       "category": "public.app-category.productivity",
       "icon": "assets/glide-app-icon.icns",
-      "identity": null,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": true,
+      "target": [
+        { "target": "dmg", "arch": "arm64" }
+      ],
       "extendInfo": {
         "NSBluetoothAlwaysUsageDescription": "Glide uses Bluetooth for passkey (security key) sign-in.",
         "NSBluetoothPeripheralUsageDescription": "Glide uses Bluetooth for passkey (security key) sign-in.",
