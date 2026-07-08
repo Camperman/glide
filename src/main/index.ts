@@ -4,6 +4,8 @@ import { join } from 'path'
 import { AccountManager, isExternalProtocol, type AccountConfig } from './accounts'
 import { DownloadManager } from './downloads'
 import { ExtensionManager } from './extensions'
+import { HistoryManager } from './history'
+import { OmniboxManager } from './omnibox'
 import { PrefsManager } from './prefs'
 import { registerIpc } from './ipc'
 import { buildAppMenu } from './menu'
@@ -21,6 +23,7 @@ if (process.env.GLIDE_USER_DATA_DIR) {
 
 let accounts: AccountManager | undefined
 let prefs: PrefsManager | undefined
+let historyRef: HistoryManager | undefined
 let state: PersistedState = { version: 1, accounts: [] }
 let persistTimer: NodeJS.Timeout | undefined
 
@@ -210,7 +213,10 @@ app.whenReady().then(() => {
   const downloads = new DownloadManager()
   ExtensionManager.handleCRXProtocol() // serve crx:// icons for the toolbar UI
   const extensions = new ExtensionManager()
-  accounts = new AccountManager(schedulePersist, downloads, extensions)
+  const history = new HistoryManager()
+  history.load()
+  historyRef = history
+  accounts = new AccountManager(schedulePersist, downloads, extensions, history)
   extensions.setDelegate(accounts)
   prefs = new PrefsManager(state.prefs)
   prefs.start((p) => {
@@ -218,7 +224,8 @@ app.whenReady().then(() => {
     downloads.configure(p)
     schedulePersist()
   })
-  registerIpc(accounts, createWindow, downloads, prefs, extensions)
+  const omnibox = new OmniboxManager(accounts, history, prefs)
+  registerIpc(accounts, createWindow, downloads, prefs, extensions, omnibox)
 
   const configs: AccountConfig[] = [...state.accounts]
     .sort((a, b) => a.order - b.order)
@@ -247,6 +254,7 @@ app.whenReady().then(() => {
 })
 
 app.on('before-quit', persistNow)
+app.on('before-quit', () => historyRef?.save())
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()

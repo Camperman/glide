@@ -255,6 +255,15 @@ export interface GlideApi {
   onFindClose(cb: () => void): () => void
   /** Cmd-L pressed: focus + select the address bar. */
   onFocusAddress(cb: () => void): () => void
+  /** Omnibox text changed; rect = address field bounds (window coords). */
+  omniboxInput(
+    text: string,
+    rect: { x: number; y: number; width: number; height: number }
+  ): Promise<void>
+  /** Arrow-key through suggestions; resolves the text to show, if any. */
+  omniboxNav(delta: 1 | -1): Promise<string | undefined>
+  /** Dismiss the suggestions dropdown. */
+  omniboxHide(): Promise<void>
   /** Current preferences + resolved dark/light (defaults merged in). */
   getPrefs(): Promise<PrefsState>
   /** Patch preferences; main applies side effects and broadcasts. */

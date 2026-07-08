@@ -45,7 +45,32 @@ export function TopBar({
 
   const submit = (e: FormEvent): void => {
     e.preventDefault()
+    void window.glide.omniboxHide()
     if (value.trim()) onNavigate(value.trim())
+  }
+
+  const onType = (next: string): void => {
+    setValue(next)
+    const rect = inputRef.current?.getBoundingClientRect()
+    if (rect) {
+      void window.glide.omniboxInput(next, {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height
+      })
+    }
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      void window.glide.omniboxNav(e.key === 'ArrowDown' ? 1 : -1).then((fill) => {
+        if (fill !== undefined) setValue(fill)
+      })
+    } else if (e.key === 'Escape') {
+      void window.glide.omniboxHide()
+    }
   }
 
   return (
@@ -83,9 +108,15 @@ export function TopBar({
           type="text"
           value={value}
           spellCheck={false}
-          placeholder="Enter a URL"
+          placeholder="Search or enter a URL"
           disabled={!nav}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => onType(e.target.value)}
+          onKeyDown={onKeyDown}
+          onBlur={() => {
+            // Delay so a mousedown on a suggestion lands before the dropdown
+            // is dismissed (the dropdown is a separate native view).
+            setTimeout(() => void window.glide.omniboxHide(), 150)
+          }}
         />
       </form>
       {partition && showActions && (

@@ -32,6 +32,7 @@ import type { MenuItemConstructorOptions } from 'electron'
 import type { PersistedAccount } from './persistence'
 import type { DownloadManager } from './downloads'
 import type { ExtensionManager, ExtensionTabDelegate } from './extensions'
+import type { HistoryManager } from './history'
 import { listChromeProfiles, readChromeBookmarkBar } from './chromeBookmarks'
 
 export const SIDEBAR_WIDTH = 64
@@ -302,7 +303,8 @@ export class AccountManager implements ExtensionTabDelegate {
   constructor(
     onState?: () => void,
     private readonly downloads?: DownloadManager,
-    private readonly extensions?: ExtensionManager
+    private readonly extensions?: ExtensionManager,
+    private readonly history?: HistoryManager
   ) {
     this.onState = onState
     const timer = setInterval(() => this.discardIdle(), DISCARD_SWEEP_MS)
@@ -493,6 +495,7 @@ export class AccountManager implements ExtensionTabDelegate {
       tab.currentUrl = wc.getURL()
       const meta = this.accounts.get(accountId)
       if (meta) meta.lastUrl = tab.currentUrl
+      this.history?.record(accountId, tab.currentUrl, wc.getTitle())
       this.onState?.()
       if (isActiveTab()) this.emitNav(ws)
     }
@@ -502,6 +505,7 @@ export class AccountManager implements ExtensionTabDelegate {
     })
     wc.on('page-title-updated', (_e, title) => {
       tab.title = title
+      this.history?.title(accountId, tab.currentUrl, title)
       const wa = this.accountState(ws, accountId)
       if (tab.originShortcutId) {
         const count = parseUnread(title)
@@ -969,6 +973,7 @@ export class AccountManager implements ExtensionTabDelegate {
 
   async removeAccount(id: string): Promise<void> {
     if (!this.accounts.has(id)) return
+    this.history?.removeAccount(id)
     // Destroy this account's views in every window and reassign active there.
     for (const ws of this.allWindows()) {
       const wa = ws.perAccount.get(id)

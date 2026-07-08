@@ -27,6 +27,7 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 19 | Default-browser registration + open-url (passkey-entitlement prereq) | ✅ |
 | 20 | Preferences window (themes, color profiles, extensions, downloads) | ✅ |
 | 21 | Browser basics (find-in-page, tab shortcuts, spell-check, print) | ✅ |
+| 22 | History + omnibox autocomplete | ✅ |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining polish explicitly requested
@@ -67,6 +68,22 @@ method instead** — on Google's "Something went wrong / Make sure Bluetooth is
 on" screen, click **Try another way** → "Tap Yes on your phone" (internet-based,
 not BLE) / authenticator code / password / backup code. Sessions persist, so
 this is one-time per account. Revisit only if we ever add Developer-ID signing.
+
+### Phase 22 notes — history + omnibox autocomplete (2026-07-08)
+- **History** (`src/main/history.ts`): per-account, recorded on main-frame
+  navigations + title updates; frecency-ranked queries; capped 3000/account;
+  stored in **per-user** userData (`glide-history.json`) — history is
+  personal, never the shared config. Cleared when an account is removed.
+- **Omnibox suggestions**: DOM cannot paint above account WebContentsViews,
+  so the dropdown is its own small trusted WebContentsView
+  (`src/main/omnibox.ts` + `suggestions.html` + dedicated preload), floated
+  under the address field (renderer measures the input rect and sends it).
+  Rows: history (frecency) → bookmarks → always a "Search <engine> for …"
+  escape hatch. Arrow keys cycle (main owns selection; fill text returns to
+  the input so plain Enter navigates), mousedown-click navigates (mousedown
+  beats the input's delayed blur→hide), Esc/submit/resize/account-switch hide.
+Manual check: browse a bit, then type a host prefix — history rows should
+lead; arrow down + Enter should navigate.
 
 ### Phase 21 notes — browser basics (2026-07-08)
 - **Find in page (Cmd-F)**: find bar occupies a chrome row (main shrinks the

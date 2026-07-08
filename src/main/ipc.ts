@@ -2,6 +2,7 @@ import { BrowserWindow, app, dialog, ipcMain, session, type IpcMainInvokeEvent }
 import type { AccountManager } from './accounts'
 import type { DownloadManager } from './downloads'
 import type { ExtensionManager } from './extensions'
+import type { OmniboxManager } from './omnibox'
 import type { PrefsManager } from './prefs'
 import type {
   AccountPatch,
@@ -21,7 +22,8 @@ export function registerIpc(
   onNewWindow: () => void,
   downloads: DownloadManager,
   prefs: PrefsManager,
-  extensions: ExtensionManager
+  extensions: ExtensionManager,
+  omnibox: OmniboxManager
 ): void {
   const winOf = (event: IpcMainInvokeEvent): BrowserWindow | null =>
     BrowserWindow.fromWebContents(event.sender)
@@ -124,6 +126,22 @@ export function registerIpc(
   ipcMain.handle('find:stop', (e) => {
     const win = winOf(e)
     if (win) accounts.closeFind(win)
+  })
+
+  ipcMain.handle(
+    'omnibox:input',
+    (e, text: string, rect: { x: number; y: number; width: number; height: number }) => {
+      const win = winOf(e)
+      if (win) void omnibox.update(win, text, rect)
+    }
+  )
+  ipcMain.handle('omnibox:nav', (e, delta: 1 | -1) => {
+    const win = winOf(e)
+    return win ? omnibox.navigate(win, delta) : undefined
+  })
+  ipcMain.handle('omnibox:hide', (e) => {
+    const win = winOf(e)
+    if (win) omnibox.hide(win)
   })
 
   // ---- global metadata / settings (broadcast to all windows) ----

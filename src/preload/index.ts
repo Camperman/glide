@@ -168,6 +168,9 @@ const api: GlideApi = {
     ipcRenderer.on('menu:focus-address', listener)
     return () => ipcRenderer.removeListener('menu:focus-address', listener)
   },
+  omniboxInput: (text, rect) => ipcRenderer.invoke('omnibox:input', text, rect),
+  omniboxNav: (delta) => ipcRenderer.invoke('omnibox:nav', delta),
+  omniboxHide: () => ipcRenderer.invoke('omnibox:hide'),
   chooseDownloadsDir: () => ipcRenderer.invoke('prefs:choose-downloads-dir'),
   isDefaultBrowser: () => ipcRenderer.invoke('prefs:is-default-browser'),
   makeDefaultBrowser: () => ipcRenderer.invoke('prefs:make-default-browser'),
