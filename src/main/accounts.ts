@@ -9,6 +9,9 @@ import {
   shell
 } from 'electron'
 import { randomUUID } from 'crypto'
+import { execFile } from 'child_process'
+import { existsSync } from 'fs'
+import { homedir } from 'os'
 import type {
   AccountPatch,
   AccountSummary,
@@ -177,6 +180,40 @@ export function isExternalProtocol(url: string): boolean {
   return !['http', 'https', 'about', 'blob', 'data', 'file', 'chrome', 'devtools', 'filesystem'].includes(
     scheme
   )
+}
+
+// Common macOS browsers, checked against their .app bundle names. Ordered by
+// how likely we are to want them; Glide filters this to what's installed.
+const KNOWN_BROWSERS: ReadonlyArray<{ label: string; app: string }> = [
+  { label: 'Safari', app: 'Safari' },
+  { label: 'Google Chrome', app: 'Google Chrome' },
+  { label: 'Google Chrome Canary', app: 'Google Chrome Canary' },
+  { label: 'Microsoft Edge', app: 'Microsoft Edge' },
+  { label: 'Firefox', app: 'Firefox' },
+  { label: 'Brave Browser', app: 'Brave Browser' },
+  { label: 'Arc', app: 'Arc' },
+  { label: 'Opera', app: 'Opera' },
+  { label: 'Vivaldi', app: 'Vivaldi' }
+]
+
+let installedBrowsersCache: ReadonlyArray<{ label: string; app: string }> | undefined
+
+/** Browsers actually installed on this Mac (detected once, then cached). */
+function installedBrowsers(): ReadonlyArray<{ label: string; app: string }> {
+  if (installedBrowsersCache) return installedBrowsersCache
+  const roots = ['/Applications', `${homedir()}/Applications`]
+  installedBrowsersCache = KNOWN_BROWSERS.filter((b) =>
+    roots.some((root) => existsSync(`${root}/${b.app}.app`))
+  )
+  return installedBrowsersCache
+}
+
+/** Open a URL in a specific browser app by name (not the OS default browser). */
+function openInBrowser(app: string, url: string): void {
+  if (!/^https?:\/\//i.test(url)) return
+  // `open -a` launches the app by name; the URL is a separate arg, so no shell
+  // interpolation. Silently ignore if the browser can't handle it.
+  execFile('open', ['-a', app, url], () => {})
 }
 
 function findFolder(nodes: BookmarkNode[], id: string): BookmarkFolder | undefined {
@@ -429,7 +466,19 @@ export class AccountManager {
       if (link) {
         items.push(
           { label: 'Open Link in New Tab', click: () => this.openLinkTab(ws, accountId, link, false) },
-          { label: 'Open Link in New Window', click: () => this.openLinkInNewWindow(accountId, link) },
+          { label: 'Open Link in New Window', click: () => this.openLinkInNewWindow(accountId, link) }
+        )
+        const browsers = installedBrowsers()
+        if (browsers.length > 0) {
+          items.push({
+            label: 'Open Link in Browser',
+            submenu: browsers.map((b) => ({
+              label: b.label,
+              click: () => openInBrowser(b.app, link)
+            }))
+          })
+        }
+        items.push(
           { label: 'Copy Link', click: () => clipboard.writeText(link) },
           { type: 'separator' }
         )
