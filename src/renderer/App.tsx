@@ -254,6 +254,7 @@ export function App(): JSX.Element {
         <div className="main-col">
           <TopBar
             nav={nav}
+            partition={activeId ? `persist:account-${activeId}` : undefined}
             onBack={() => void window.glide.goBack()}
             onForward={() => void window.glide.goForward()}
             onReload={() => void window.glide.reload()}

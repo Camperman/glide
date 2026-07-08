@@ -22,6 +22,7 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 14 | Download handling (save to ~/Downloads, top-bar panel) | ✅ |
 | 15 | Per-account notification mute | ✅ |
 | 16 | Notification click → switch to account | ✅ |
+| 17 | Chrome extensions (Electron 37, electron-chrome-extensions) | ✅ |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining polish explicitly requested
@@ -63,17 +64,36 @@ on" screen, click **Try another way** → "Tap Yes on your phone" (internet-base
 not BLE) / authenticator code / password / backup code. Sessions persist, so
 this is one-time per account. Revisit only if we ever add Developer-ID signing.
 
-### Future feature — Chrome extension support (scoped, not built)
-The user wants this eventually (relies on: an **ad blocker** uBlock/AdBlock, a
-**password manager** 1Password/Bitwarden, **productivity** Grammarly/Loom).
-Recommended path = "Tier 2": add **electron-chrome-extensions** (+
-`electron-chrome-web-store` for installs), build a browser-action toolbar +
-popups in our chrome, manage installs per profile (per session partition), and
-**upgrade Electron 33 → 35+** (needed for Manifest V3 service workers). Caveats:
-not all extensions work (deep `webRequest`/`declarativeNetRequest`/native-
-messaging ones may be partial), and it's ongoing maintenance tied to Chromium.
-Native Electron `session.loadExtension` is the cheap "Tier 1" fallback for
-sideloading one unpacked extension, but only supports a subset of APIs.
+### Phase 17 notes — Chrome extensions (2026-07-08)
+Built the "Tier 2" path scoped below. **Electron 34 → 37.10.3** (the version
+electron-browser-shell tests against; ≥35 needed for MV3 service workers), plus
+`electron-chrome-extensions@4.9` (GPL-3.0 — fine, Glide is personal/undistributed)
+and `electron-chrome-web-store@0.13`. Architecture:
+- One `ElectronChromeExtensions` instance **per account partition**
+  (`src/main/extensions.ts`) — extensions install per profile, like Chrome.
+- Installs: browse `chromewebstore.google.com` inside any Glide tab of that
+  account and click "Add to Chrome". Installed extensions persist under
+  `userData/Extensions/<accountId>` and auto-update.
+- Toolbar: `<browser-action-list partition=…>` in the top bar (element injected
+  by our UI preload via `injectBrowserAction()`); popups are positioned by the
+  library. `ExtensionManager.handleCRXProtocol` serves icons.
+- Tab model bridged via `ExtensionTabDelegate` on AccountManager
+  (chrome.tabs create/select/remove → our openTab/activate/closeTab).
+- electron-vite now uses `externalizeDepsPlugin` — the library must load its
+  companion session preload from its real node_modules path (verified present
+  in the packaged app.asar).
+
+**Conscious tradeoff (documented like Phase 16's):** the library registers its
+own sandboxed `chrome-extension-api` preload on account sessions — that is how
+chrome.* APIs reach content scripts. Glide itself still attaches no preload to
+account views and they keep `nodeIntegration: false, contextIsolation: true`.
+
+**Caveats:** not every extension works (deep `webRequest`/native-messaging ones
+may be partial); maintenance now tied to the library tracking Chromium. Manual
+checks: (1) in an account tab visit the Web Store, install **uBlock Origin
+Lite**; icon appears in the top bar; ads blocked in that account only.
+(2) Install **1Password** — expect partial: popup UI should render; native-app
+integration (biometric unlock) won't work without native messaging.
 
 ### Phase 16 notes — notification click-to-switch (2026-07-08, resolves the Phase 7 deferral)
 Originally deferred because it seemed to need a preload on account views

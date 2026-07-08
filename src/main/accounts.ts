@@ -30,6 +30,7 @@ import type {
 import type { MenuItemConstructorOptions } from 'electron'
 import type { PersistedAccount } from './persistence'
 import type { DownloadManager } from './downloads'
+import type { ExtensionManager, ExtensionTabDelegate } from './extensions'
 import { listChromeProfiles, readChromeBookmarkBar } from './chromeBookmarks'
 
 export const SIDEBAR_WIDTH = 64
@@ -270,7 +271,7 @@ function findFolder(nodes: BookmarkNode[], id: string): BookmarkFolder | undefin
  * Metadata + app settings are global; tabs / active selection / unread are
  * per-window. Metadata mutations broadcast to every window; `onState` persists.
  */
-export class AccountManager {
+export class AccountManager implements ExtensionTabDelegate {
   private readonly onState?: () => void
   private readonly accounts = new Map<string, AccountMeta>()
   private order: string[] = []
@@ -281,7 +282,8 @@ export class AccountManager {
 
   constructor(
     onState?: () => void,
-    private readonly downloads?: DownloadManager
+    private readonly downloads?: DownloadManager,
+    private readonly extensions?: ExtensionManager
   ) {
     this.onState = onState
     const timer = setInterval(() => this.discardIdle(), DISCARD_SWEEP_MS)
@@ -297,6 +299,7 @@ export class AccountManager {
   private addMeta(config: AccountConfig): AccountMeta {
     const ses = session.fromPartition(partitionFor(config.id))
     this.downloads?.attach(ses, config.id)
+    this.extensions?.attach(ses, config.id)
     // Consult live state on every request/check so toggling "Mute Notifications"
     // takes effect immediately — Chromium re-checks permission each time a page
     // tries to display a notification.
@@ -427,6 +430,7 @@ export class AccountManager {
     view.setBorderRadius(CONTENT_RADIUS) // rounded "card" corners (Electron 34+)
     const wc = view.webContents
     tab.view = view
+    this.extensions?.addTab(accountId, wc, ws.win)
 
     const isActiveTab = (): boolean =>
       ws.activeAccountId === accountId &&
@@ -704,6 +708,46 @@ export class AccountManager {
       wa.activeTabId = tab.id
     }
     this.afterTabChange(ws, accountId)
+  }
+
+  // ---- ExtensionTabDelegate (chrome.tabs.* reaching into our tab model) --
+
+  /** Find which window/account/tab a WebContents belongs to. */
+  private findTab(
+    wc: WebContents
+  ): { ws: WindowState; accountId: string; tab: Tab } | undefined {
+    for (const ws of this.allWindows()) {
+      for (const [accountId, wa] of ws.perAccount) {
+        const tab = wa.tabs.find((t) => t.view?.webContents === wc)
+        if (tab) return { ws, accountId, tab }
+      }
+    }
+    return undefined
+  }
+
+  openExtensionTab(accountId: string, url: string): [WebContents, BrowserWindow] | undefined {
+    const ws =
+      this.allWindows().find((w) => !w.win.isDestroyed() && w.win.isFocused()) ??
+      this.allWindows()[0]
+    if (!ws || !this.accounts.has(accountId)) return undefined
+    const tab = this.openTab(ws, accountId, url)
+    this.accountState(ws, accountId).activeTabId = tab.id
+    this.setActiveWs(ws, accountId)
+    this.afterTabChange(ws, accountId)
+    return tab.view ? [tab.view.webContents, ws.win] : undefined
+  }
+
+  selectExtensionTab(wc: WebContents): void {
+    const found = this.findTab(wc)
+    if (!found) return
+    this.accountState(found.ws, found.accountId).activeTabId = found.tab.id
+    this.setActiveWs(found.ws, found.accountId)
+    this.afterTabChange(found.ws, found.accountId)
+  }
+
+  closeExtensionTab(wc: WebContents): void {
+    const found = this.findTab(wc)
+    if (found) this.closeTab(found.ws.win, found.accountId, found.tab.id)
   }
 
   private afterTabChange(ws: WindowState, accountId: string): void {
@@ -1213,6 +1257,9 @@ export class AccountManager {
         const visible =
           accountId === ws.activeAccountId && tab.id === wa.activeTabId && !ws.overlayOpen
         tab.view.setVisible(visible)
+        // Keep the extension system's notion of "active tab" in sync so
+        // browser actions / popups target the on-screen tab.
+        if (visible) this.extensions?.selectTab(accountId, tab.view.webContents)
       }
     }
   }

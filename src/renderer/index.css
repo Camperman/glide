@@ -726,6 +726,16 @@ body {
   color: #fff;
 }
 
+/* Extension toolbar (browser-action-list custom element) */
+.topbar__actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  height: 30px;
+  /* Color hints consumed by the element's internal styling. */
+  --browser-action-badge-outline: var(--panel-bg);
+}
+
 /* Muted-notifications indicator (bottom-right of the avatar, mirrors the
    unread badge's placement at top-right). */
 .account__muted {

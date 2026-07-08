@@ -21,7 +21,7 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
-    "electron": "^34.0.0",
+    "electron": "^37.10.3",
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
     "react": "^18.3.1",
@@ -32,8 +32,13 @@
   "build": {
     "appId": "com.bcamp.glide",
     "productName": "Glide",
-    "files": ["out/**/*", "package.json"],
-    "directories": { "output": "dist" },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
     "mac": {
       "category": "public.app-category.productivity",
       "icon": "assets/glide-app-icon.icns",
@@ -45,5 +50,9 @@
         "NSMicrophoneUsageDescription": "Glide lets Google apps such as Meet use the microphone."
       }
     }
+  },
+  "dependencies": {
+    "electron-chrome-extensions": "^4.9.0",
+    "electron-chrome-web-store": "^0.13.0"
   }
 }

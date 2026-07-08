@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto'
 import { join } from 'path'
 import { AccountManager, isExternalProtocol, type AccountConfig } from './accounts'
 import { DownloadManager } from './downloads'
+import { ExtensionManager } from './extensions'
 import { registerIpc } from './ipc'
 import { buildAppMenu } from './menu'
 import { loadState, saveState, type PersistedState } from './persistence'
@@ -154,7 +155,10 @@ app.whenReady().then(() => {
   seedPasswordsApp()
 
   const downloads = new DownloadManager()
-  accounts = new AccountManager(schedulePersist, downloads)
+  ExtensionManager.handleCRXProtocol() // serve crx:// icons for the toolbar UI
+  const extensions = new ExtensionManager()
+  accounts = new AccountManager(schedulePersist, downloads, extensions)
+  extensions.setDelegate(accounts)
   registerIpc(accounts, createWindow, downloads)
 
   const configs: AccountConfig[] = [...state.accounts]

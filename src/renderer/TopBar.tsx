@@ -3,6 +3,8 @@ import type { NavState } from '../shared/types'
 
 interface TopBarProps {
   nav: NavState | null
+  /** Active account's session partition — hosts the extension toolbar. */
+  partition?: string
   onBack: () => void
   onForward: () => void
   onReload: () => void
@@ -15,6 +17,7 @@ interface TopBarProps {
 // and an editable address field reflecting the active view's URL.
 export function TopBar({
   nav,
+  partition,
   onBack,
   onForward,
   onReload,
@@ -72,6 +75,9 @@ export function TopBar({
           onChange={(e) => setValue(e.target.value)}
         />
       </form>
+      {partition && (
+        <browser-action-list className="topbar__actions" partition={partition} />
+      )}
       {children}
     </div>
   )

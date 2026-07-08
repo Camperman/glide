@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import { injectBrowserAction } from 'electron-chrome-extensions/browser-action'
 import type {
   AccountSummary,
   AppRailLayout,
@@ -147,3 +148,8 @@ const api: GlideApi = {
 }
 
 contextBridge.exposeInMainWorld('glide', api)
+
+// Register the <browser-action-list> custom element (extension toolbar).
+// This preload only ever runs in Glide's own chrome UI — account views get
+// no preload — so no URL gating is needed.
+injectBrowserAction()
