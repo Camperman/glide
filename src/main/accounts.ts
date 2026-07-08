@@ -112,6 +112,8 @@ interface Tab {
   favicon?: string
   originShortcutId?: string
   lastActive: number
+  audible?: boolean
+  muted?: boolean
 }
 
 /** Per-window state for a single account (its open tabs in that window). */
@@ -469,6 +471,23 @@ export class AccountManager implements ExtensionTabDelegate {
       this.extractAvatar(accountId, wc)
       setTimeout(() => this.extractAvatar(accountId, wc), 2000)
     })
+
+    // Audio playing/stopped → speaker indicators in the tab strip + app rail.
+    wc.on('audio-state-changed', (event) => {
+      tab.audible = event.audible
+      this.emitTabs(ws, accountId)
+      this.emitApps(ws, accountId)
+    })
+
+    // Hovered-link URL → readout in the chrome (DOM can't float over views).
+    wc.on('update-target-url', (_e, url) => {
+      if (isActiveTab() && !ws.win.isDestroyed()) {
+        ws.win.webContents.send('nav:target-url', url)
+      }
+    })
+
+    // Rebuilt views (after a discard) keep the user's mute choice.
+    if (tab.muted) wc.setAudioMuted(true)
 
     // Find-in-page results → the find bar's "3/17" counter.
     wc.on('found-in-page', (_e, result) => {
@@ -1218,8 +1237,19 @@ export class AccountManager implements ExtensionTabDelegate {
         title: t.title || hostOf(t.currentUrl) || 'New tab',
         active: t.id === wa.activeTabId,
         favicon: t.favicon,
-        shortcutId: t.originShortcutId
+        shortcutId: t.originShortcutId,
+        audible: t.audible,
+        muted: t.muted
       }))
+  }
+
+  toggleTabMute(win: BrowserWindow, accountId: string, tabId: string): void {
+    const ws = this.wsFor(win)
+    const tab = ws?.perAccount.get(accountId)?.tabs.find((t) => t.id === tabId)
+    if (!ws || !tab) return
+    tab.muted = !tab.muted
+    tab.view?.webContents.setAudioMuted(tab.muted)
+    this.emitTabs(ws, accountId)
   }
 
   getApps(win: BrowserWindow, accountId: string): { apps: AppInfo[]; activeShortcutId?: string } {
@@ -1232,7 +1262,8 @@ export class AccountManager implements ExtensionTabDelegate {
       id: s.id,
       label: s.label,
       favicon: s.favicon,
-      unread: wa?.unreadByApp[s.id] ?? 0
+      unread: wa?.unreadByApp[s.id] ?? 0,
+      audible: wa?.tabs.some((t) => t.originShortcutId === s.id && t.audible && !t.muted)
     }))
     return { apps, activeShortcutId: activeTab?.originShortcutId }
   }

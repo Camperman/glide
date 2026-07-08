@@ -7,6 +7,7 @@ interface TabStripProps {
   onActivate: (tabId: string) => void
   onClose: (tabId: string) => void
   onReorder: (tabIds: string[]) => void
+  onToggleMute: (tabId: string) => void
   onNew: () => void
 }
 
@@ -20,6 +21,7 @@ export function TabStrip({
   onActivate,
   onClose,
   onReorder,
+  onToggleMute,
   onNew
 }: TabStripProps): JSX.Element {
   const dragId = useRef<string | null>(null)
@@ -68,6 +70,19 @@ export function TabStrip({
         >
           {tab.favicon && <img className="tab__favicon" src={tab.favicon} alt="" />}
           <span className="tab__title">{tab.title}</span>
+          {(tab.audible || tab.muted) && (
+            <button
+              type="button"
+              className="tab__audio"
+              title={tab.muted ? 'Unmute tab' : 'Mute tab'}
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleMute(tab.id)
+              }}
+            >
+              {tab.muted ? '🔇' : '🔊'}
+            </button>
+          )}
           <button
             type="button"
             className="tab__close"

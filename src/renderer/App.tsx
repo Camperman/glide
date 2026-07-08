@@ -55,6 +55,7 @@ export function App(): JSX.Element {
   const [prefsOpen, setPrefsOpen] = useState(false)
   const [hasExtensions, setHasExtensions] = useState(false)
   const [findOpen, setFindOpen] = useState(false)
+  const [targetUrl, setTargetUrl] = useState('')
 
   useEffect(() => {
     void window.glide.listAccounts().then(setAccounts)
@@ -79,6 +80,7 @@ export function App(): JSX.Element {
     const offOpenPrefs = window.glide.onOpenPreferences(() => setPrefsOpen(true))
     const offFindOpen = window.glide.onFindOpen(() => setFindOpen(true))
     const offFindClose = window.glide.onFindClose(() => setFindOpen(false))
+    const offTarget = window.glide.onTargetUrl(setTargetUrl)
     const offActive = window.glide.onActiveChanged(setActiveId)
     const offNav = window.glide.onNavState(setNav)
     const offUnread = window.glide.onUnread(({ id, count }) =>
@@ -125,6 +127,7 @@ export function App(): JSX.Element {
       offOpenPrefs()
       offFindOpen()
       offFindClose()
+      offTarget()
       offEditAccount()
       offEditShortcut()
     }
@@ -268,6 +271,9 @@ export function App(): JSX.Element {
             setTabs((prev) => tabIds.map((id) => prev.find((t) => t.id === id)!).filter(Boolean))
             void window.glide.reorderTabs(activeId, tabIds)
           }}
+          onToggleMute={(tabId) => {
+            if (activeId) void window.glide.toggleTabMute(activeId, tabId)
+          }}
           onNew={() => {
             if (activeId) void window.glide.newTab(activeId)
           }}
@@ -298,6 +304,7 @@ export function App(): JSX.Element {
             onReload={() => void window.glide.reload()}
             onNavigate={(url) => void window.glide.navigate(url)}
           >
+            {targetUrl && <span className="topbar__target">{targetUrl}</span>}
             <Downloads
               downloads={downloads}
               open={downloadsOpen}

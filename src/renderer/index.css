@@ -1429,3 +1429,50 @@ body {
 .findbar button:hover {
   background: var(--hover);
 }
+
+/* Tab audio (speaker toggle) */
+.tab__audio {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 10px;
+  line-height: 18px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.tab__audio:hover {
+  background: var(--hover-strong);
+}
+
+/* App-rail "playing audio" indicator (bottom-right of the icon) */
+.apprail__audio {
+  position: absolute;
+  bottom: -5px;
+  right: -6px;
+  font-size: 9px;
+  line-height: 1;
+  filter: drop-shadow(0 0 2px var(--panel-bg));
+}
+
+/* Hovered-link URL readout (right side of the top bar) */
+.topbar__target {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 340px;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* When the target readout is present it takes over margin-left:auto;
+   keep the downloads chip snug against it. */
+.topbar__target + .downloads {
+  margin-left: 8px;
+}

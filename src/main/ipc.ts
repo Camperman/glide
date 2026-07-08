@@ -93,6 +93,10 @@ export function registerIpc(
     const win = winOf(e)
     if (win) accounts.reorderTabs(win, accountId, tabIds)
   })
+  ipcMain.handle('tabs:toggle-mute', (e, accountId: string, tabId: string) => {
+    const win = winOf(e)
+    if (win) accounts.toggleTabMute(win, accountId, tabId)
+  })
 
   ipcMain.handle('bookmarks:open', (e, accountId: string, url: string) => {
     const win = winOf(e)

@@ -29,6 +29,7 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 21 | Browser basics (find-in-page, tab shortcuts, spell-check, print) | ✅ |
 | 22 | History + omnibox autocomplete | ✅ |
 | 23 | Auto-update (electron-updater + GitHub Releases) | ✅ |
+| 24 | Polish: tab audio indicators + hover link readout | ✅ |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining polish explicitly requested
@@ -69,6 +70,14 @@ method instead** — on Google's "Something went wrong / Make sure Bluetooth is
 on" screen, click **Try another way** → "Tap Yes on your phone" (internet-based,
 not BLE) / authenticator code / password / backup code. Sessions persist, so
 this is one-time per account. Revisit only if we ever add Developer-ID signing.
+
+### Phase 24 notes — audio indicators + link readout (2026-07-08)
+- Tabs show 🔊 while audible (click to mute → 🔇; mute survives idle-discard
+  rebuilds). App-rail icons get a small 🔊 when one of their tabs plays.
+- Hovering a link shows its URL right-aligned in the top bar
+  (`update-target-url`) — bottom-left Chrome placement is impossible since
+  DOM can't paint over the account views.
+Manual check: play a YouTube/Meet tab → speaker appears; mute silences it.
 
 ### Phase 23 notes — auto-update (2026-07-08)
 `electron-updater` against GitHub Releases (public repo — downloads need no

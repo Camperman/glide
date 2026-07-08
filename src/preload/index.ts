@@ -108,6 +108,12 @@ const api: GlideApi = {
   activateTab: (accountId, tabId) => ipcRenderer.invoke('tabs:activate', accountId, tabId),
   closeTab: (accountId, tabId) => ipcRenderer.invoke('tabs:close', accountId, tabId),
   reorderTabs: (accountId, tabIds) => ipcRenderer.invoke('tabs:reorder', accountId, tabIds),
+  toggleTabMute: (accountId, tabId) => ipcRenderer.invoke('tabs:toggle-mute', accountId, tabId),
+  onTargetUrl: (cb) => {
+    const listener = (_event: unknown, url: string): void => cb(url)
+    ipcRenderer.on('nav:target-url', listener)
+    return () => ipcRenderer.removeListener('nav:target-url', listener)
+  },
   getTabs: (accountId) => ipcRenderer.invoke('tabs:list', accountId),
   onTabsState: (cb) => {
     const listener = (_event: unknown, state: TabsState): void => cb(state)

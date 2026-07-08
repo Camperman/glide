@@ -90,6 +90,11 @@ export function AppRail({
                 {app.unread > 99 ? '99+' : app.unread}
               </span>
             )}
+            {app.audible && (
+              <span className="apprail__audio" title="Playing audio">
+                🔊
+              </span>
+            )}
           </span>
           {variant === 'rail' && <span className="apprail__label">{app.label}</span>}
         </button>

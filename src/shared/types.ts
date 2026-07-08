@@ -67,6 +67,8 @@ export interface AppInfo {
   label: string
   favicon?: string
   unread: number
+  /** One of this app's tabs is playing audio. */
+  audible?: boolean
 }
 
 /** Drives the app rail: the profile's apps + which one is currently active. */
@@ -157,6 +159,10 @@ export interface TabInfo {
   favicon?: string
   /** The app (shortcut) this tab was opened from, if any. */
   shortcutId?: string
+  /** Currently playing audio. */
+  audible?: boolean
+  /** Audio muted by the user (speaker toggle). */
+  muted?: boolean
 }
 
 /** Open tabs for the active account (drives the tab strip). */
@@ -222,6 +228,10 @@ export interface GlideApi {
   closeTab(accountId: string, tabId: string): Promise<void>
   /** Reorder tabs to match the given id order (drag-and-drop). */
   reorderTabs(accountId: string, tabIds: string[]): Promise<void>
+  /** Toggle the tab's audio mute (speaker icon in the tab strip). */
+  toggleTabMute(accountId: string, tabId: string): Promise<void>
+  /** Hovered-link URL from the active page ('' when unhovered). */
+  onTargetUrl(cb: (url: string) => void): () => void
   getTabs(accountId: string): Promise<TabInfo[]>
   /** Subscribe to the active account's open tabs. Returns an unsubscribe fn. */
   onTabsState(cb: (state: TabsState) => void): () => void
