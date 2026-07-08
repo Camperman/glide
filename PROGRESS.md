@@ -21,6 +21,7 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 12 | Multiple windows (Cmd-N) | ✅ |
 | 14 | Download handling (save to ~/Downloads, top-bar panel) | ✅ |
 | 15 | Per-account notification mute | ✅ |
+| 16 | Notification click → switch to account | ✅ |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining polish explicitly requested
@@ -74,16 +75,18 @@ messaging ones may be partial), and it's ongoing maintenance tied to Chromium.
 Native Electron `session.loadExtension` is the cheap "Tier 1" fallback for
 sideloading one unpacked extension, but only supports a subset of APIs.
 
-### Deferred from Phase 7 (intentional)
-**Notification click → switch to that account.** Reliable mapping of an HTML5
-`Notification` click back to its originating account requires injecting script
-into the Google page (e.g. wrapping `window.Notification`). That means a preload
-on the account views — which REQUIREMENTS.md §4.1/§7 explicitly forbid (account
-views are untrusted remote content: no preload, no node integration). Rather than
-violate that hard constraint, this is left for a future decision. The background-
-activity signal it was meant to provide is already covered by the live unread
-badges (Phase 6). If wanted, revisit as Phase 8 with a minimal, notification-only
-isolated preload as a conscious, documented tradeoff.
+### Phase 16 notes — notification click-to-switch (2026-07-08, resolves the Phase 7 deferral)
+Originally deferred because it seemed to need a preload on account views
+(forbidden by REQUIREMENTS.md §4.1/§7). Solved **without a preload**: a small
+script injected via `executeJavaScript` on `did-finish-load` (the same precedent
+as the avatar scrape) wraps `window.Notification` and `console.log`s a sentinel
+when a notification is clicked; main hears it on the tab's `console-message`
+event and switches window/account/tab and focuses the app. The channel is
+one-way page→main with no exposed privileges — account views still have no
+preload and no node integration. Caveat: notifications fired from **service
+workers** bypass `window.Notification` and aren't caught (Gmail/Calendar/Meet
+fire from the page today). Manual check: with account B in the background,
+receive a mail there, click the banner → Glide focuses and switches to B.
 
 ## Pending manual checks (need a real Google login)
 - **Phase 1:** Run `npm start`, log into Gmail in the account pane, quit, relaunch

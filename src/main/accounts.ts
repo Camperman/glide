@@ -125,6 +125,36 @@ interface WindowState {
   perAccount: Map<string, WindowAccount>
 }
 
+// Sentinel logged by the injected Notification wrapper when the user clicks a
+// notification; main hears it via 'console-message' and switches to the account.
+const NOTIFICATION_CLICK_SENTINEL = '__GLIDE_NOTIFICATION_CLICK__'
+
+// Wraps window.Notification in the page so clicks on Google's HTML5
+// notifications are observable from main. Read-only + one-way (console.log);
+// the page gains no privileges. Same injection precedent as AVATAR_SCRIPT.
+// Note: notifications fired from service workers bypass window.Notification
+// and are not caught — Gmail/Calendar/Meet fire theirs from the page.
+const NOTIFICATION_HOOK_SCRIPT = `(() => {
+  if (window.__glideNotifHook) return
+  window.__glideNotifHook = true
+  const Native = window.Notification
+  if (!Native) return
+  const Wrapped = function (title, options) {
+    const n = new Native(title, options)
+    try {
+      n.addEventListener('click', () => console.log('${NOTIFICATION_CLICK_SENTINEL}'))
+    } catch {}
+    return n
+  }
+  Wrapped.prototype = Native.prototype
+  try {
+    Object.defineProperty(Wrapped, 'permission', { get: () => Native.permission })
+    Wrapped.requestPermission = Native.requestPermission.bind(Native)
+    Object.defineProperty(Wrapped, 'maxActions', { get: () => Native.maxActions })
+  } catch {}
+  window.Notification = Wrapped
+})()`
+
 const AVATAR_SCRIPT = `(() => {
   const sels = [
     'a[aria-label*="Google Account"] img',
@@ -404,8 +434,20 @@ export class AccountManager {
 
     wc.on('did-finish-load', () => {
       wc.setZoomFactor(this.zoomFactor)
+      void wc.executeJavaScript(NOTIFICATION_HOOK_SCRIPT, true).catch(() => {})
       this.extractAvatar(accountId, wc)
       setTimeout(() => this.extractAvatar(accountId, wc), 2000)
+    })
+
+    // Clicking one of this tab's notifications switches to this account + tab.
+    wc.on('console-message', (_e, _level, message) => {
+      if (message !== NOTIFICATION_CLICK_SENTINEL) return
+      this.accountState(ws, accountId).activeTabId = tab.id
+      this.setActiveWs(ws, accountId)
+      if (ws.win.isDestroyed()) return
+      if (ws.win.isMinimized()) ws.win.restore()
+      ws.win.show()
+      ws.win.focus()
     })
 
     const onNav = (): void => {
