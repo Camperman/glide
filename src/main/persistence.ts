@@ -20,6 +20,8 @@ export interface PersistedAccount {
   avatarUrl?: string
   activeShortcutId?: string
   bookmarks?: BookmarkNode[]
+  /** Notifications from this account are suppressed. */
+  muted?: boolean
 }
 
 export interface WindowBounds {

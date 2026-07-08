@@ -6,6 +6,8 @@ export interface AccountSummary {
   color: string
   /** Google account photo URL, scraped from the logged-in page (best-effort). */
   avatarUrl?: string
+  /** Notifications from this account are suppressed. */
+  muted?: boolean
 }
 
 export interface NewAccountInput {
@@ -17,6 +19,7 @@ export interface NewAccountInput {
 export interface AccountPatch {
   label?: string
   color?: string
+  muted?: boolean
 }
 
 export interface Shortcut {

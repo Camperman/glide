@@ -51,6 +51,11 @@ export function Sidebar({
                   {count > 99 ? '99+' : count}
                 </span>
               )}
+              {account.muted && (
+                <span className="account__muted" title="Notifications muted">
+                  🔕
+                </span>
+              )}
             </div>
           )
         })}

@@ -726,6 +726,23 @@ body {
   color: #fff;
 }
 
+/* Muted-notifications indicator (bottom-right of the avatar, mirrors the
+   unread badge's placement at top-right). */
+.account__muted {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: #3a3e47;
+  font-size: 10px;
+  line-height: 18px;
+  text-align: center;
+  border: 2px solid var(--sidebar-bg);
+  pointer-events: none;
+}
+
 /* Downloads button (right of the address bar) + drop-down panel */
 .downloads {
   position: relative;

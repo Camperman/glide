@@ -80,6 +80,7 @@ export interface AccountConfig {
   shortcuts?: Shortcut[]
   avatarUrl?: string
   bookmarks?: BookmarkNode[]
+  muted?: boolean
 }
 
 /** Shared, persisted metadata for an account (not window-specific). */
@@ -92,6 +93,8 @@ interface AccountMeta {
   shortcuts: Shortcut[]
   bookmarks: BookmarkNode[]
   avatarUrl?: string
+  /** Suppress notifications from this account (permission denied while set). */
+  muted?: boolean
 }
 
 /** One open browser tab within an account, in a specific window. `view` is
@@ -264,10 +267,15 @@ export class AccountManager {
   private addMeta(config: AccountConfig): AccountMeta {
     const ses = session.fromPartition(partitionFor(config.id))
     this.downloads?.attach(ses, config.id)
-    ses.setPermissionRequestHandler((_wc, permission, callback) =>
-      callback(GRANTED_PERMISSIONS.has(permission))
-    )
-    ses.setPermissionCheckHandler((_wc, permission) => GRANTED_PERMISSIONS.has(permission))
+    // Consult live state on every request/check so toggling "Mute Notifications"
+    // takes effect immediately — Chromium re-checks permission each time a page
+    // tries to display a notification.
+    const allowed = (permission: string): boolean => {
+      if (permission === 'notifications' && this.accounts.get(config.id)?.muted) return false
+      return GRANTED_PERMISSIONS.has(permission)
+    }
+    ses.setPermissionRequestHandler((_wc, permission, callback) => callback(allowed(permission)))
+    ses.setPermissionCheckHandler((_wc, permission) => allowed(permission))
 
     // Enable screen sharing (Google Meet getDisplayMedia). On macOS 15+ the
     // native system picker is used; otherwise we fall back to sharing the
@@ -291,7 +299,8 @@ export class AccountManager {
       shortcuts:
         config.shortcuts && config.shortcuts.length > 0 ? config.shortcuts : defaultShortcuts(),
       bookmarks: config.bookmarks ?? [],
-      avatarUrl: config.avatarUrl
+      avatarUrl: config.avatarUrl,
+      muted: config.muted
     }
     this.accounts.set(meta.id, meta)
     if (!this.order.includes(meta.id)) this.order.push(meta.id)
@@ -704,6 +713,7 @@ export class AccountManager {
     if (!meta) return
     if (patch.label !== undefined) meta.label = patch.label.trim() || meta.label
     if (patch.color !== undefined) meta.color = patch.color
+    if (patch.muted !== undefined) meta.muted = patch.muted
     this.broadcastUpdated()
     this.onState?.()
   }
@@ -974,7 +984,13 @@ export class AccountManager {
   summaries(): AccountSummary[] {
     return this.order.map((id) => {
       const meta = this.accounts.get(id)!
-      return { id: meta.id, label: meta.label, color: meta.color, avatarUrl: meta.avatarUrl }
+      return {
+        id: meta.id,
+        label: meta.label,
+        color: meta.color,
+        avatarUrl: meta.avatarUrl,
+        muted: meta.muted
+      }
     })
   }
 
@@ -1056,9 +1072,16 @@ export class AccountManager {
   // ---- context menus (per window) ---------------------------------------
 
   popupAccountMenu(win: BrowserWindow, accountId: string): void {
-    if (!this.accounts.has(accountId)) return
+    const meta = this.accounts.get(accountId)
+    if (!meta) return
     Menu.buildFromTemplate([
       { label: 'Edit', click: () => win.webContents.send('menu:edit-account', accountId) },
+      {
+        label: 'Mute Notifications',
+        type: 'checkbox',
+        checked: Boolean(meta.muted),
+        click: () => this.updateAccount(accountId, { muted: !meta.muted })
+      },
       { type: 'separator' },
       { label: 'Remove', click: () => void this.removeAccount(accountId) }
     ]).popup({ window: win })
@@ -1119,7 +1142,8 @@ export class AccountManager {
         order: index,
         shortcuts: meta.shortcuts,
         avatarUrl: meta.avatarUrl,
-        bookmarks: meta.bookmarks
+        bookmarks: meta.bookmarks,
+        muted: meta.muted
       }
     })
   }

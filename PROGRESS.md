@@ -20,6 +20,7 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 13 | App rail + favicons + per-app badges | ✅ |
 | 12 | Multiple windows (Cmd-N) | ✅ |
 | 14 | Download handling (save to ~/Downloads, top-bar panel) | ✅ |
+| 15 | Per-account notification mute | ✅ |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining polish explicitly requested
@@ -29,6 +30,16 @@ entry: auto-fetched Google avatars, persisted global zoom. **Scroll-position
 restore was investigated and dropped**: views stay alive while the app runs (scroll
 only lost on the 30-min idle discard), and Google apps scroll inner containers, so
 a generic window-scroll restore wouldn't actually restore anything useful.
+
+### Phase 15 notes — per-account notification mute (2026-07-08)
+Right-click an account in the sidebar → **Mute Notifications** (checkbox).
+Muting flips a persisted `muted` flag; the session's permission request/check
+handlers consult it live, so Chromium denies the notification permission the
+next time the page checks — no reload needed. A small 🔕 badge shows on the
+muted account's avatar (bottom-right, mirroring the unread badge). Unread
+badges still work while muted (they come from the page title, not
+notifications). Manual check: mute an account, send it a mail from elsewhere —
+no banner appears, unread badge still increments; unmute → banners return.
 
 ### Phase 14 notes — downloads (2026-07-08)
 Chrome-style: every download saves straight to `~/Downloads` (name uniquified,
