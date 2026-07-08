@@ -28,6 +28,7 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 20 | Preferences window (themes, color profiles, extensions, downloads) | ✅ |
 | 21 | Browser basics (find-in-page, tab shortcuts, spell-check, print) | ✅ |
 | 22 | History + omnibox autocomplete | ✅ |
+| 23 | Auto-update (electron-updater + GitHub Releases) | ✅ |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining polish explicitly requested
@@ -68,6 +69,17 @@ method instead** — on Google's "Something went wrong / Make sure Bluetooth is
 on" screen, click **Try another way** → "Tap Yes on your phone" (internet-based,
 not BLE) / authenticator code / password / backup code. Sessions persist, so
 this is one-time per account. Revisit only if we ever add Developer-ID signing.
+
+### Phase 23 notes — auto-update (2026-07-08)
+`electron-updater` against GitHub Releases (public repo — downloads need no
+token). Checks 15 s after launch + every 4 h; background download; dialog
+offers Restart Now / Later (Later installs on next quit). No-ops in dev and
+swallows errors (expected for unsigned local builds and until a release
+carries update artifacts). **Release flow changed:** `npm run dist` now also
+produces a **zip + latest-mac.yml** — upload BOTH (plus the DMG) to every
+GitHub release or auto-update silently never finds updates:
+`gh release create vX.Y.Z dist/Glide-*.dmg dist/Glide-*.zip dist/latest-mac.yml`.
+Older installs (≤0.2.0) predate the updater — friends on those re-download once.
 
 ### Phase 22 notes — history + omnibox autocomplete (2026-07-08)
 - **History** (`src/main/history.ts`): per-account, recorded on main-frame

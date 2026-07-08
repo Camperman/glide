@@ -7,6 +7,7 @@ import { ExtensionManager } from './extensions'
 import { HistoryManager } from './history'
 import { OmniboxManager } from './omnibox'
 import { PrefsManager } from './prefs'
+import { startAutoUpdate } from './updater'
 import { registerIpc } from './ipc'
 import { buildAppMenu } from './menu'
 import { loadState, saveState, type PersistedState } from './persistence'
@@ -247,6 +248,7 @@ app.whenReady().then(() => {
 
   installMenu()
   createWindow()
+  startAutoUpdate()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
