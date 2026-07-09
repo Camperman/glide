@@ -297,9 +297,11 @@ body {
 }
 
 .tab--active {
-  /* Toolbar color + flush bottom → the active tab connects into the content. */
+  /* Toolbar color + an accent ring (matches the app-rail active indicator;
+     follows the active account's color when that pref is on). */
   background: var(--panel-bg);
   color: var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
 }
 
 .tab[draggable='true']:active {
