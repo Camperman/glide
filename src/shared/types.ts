@@ -108,6 +108,14 @@ export interface Prefs {
   askWhereToSave: boolean
 }
 
+/** One browsing-history entry (Cmd-Y page + omnibox suggestions). */
+export interface HistoryItem {
+  url: string
+  title: string
+  visits: number
+  lastVisit: number
+}
+
 /** Prefs plus the resolved appearance (main owns nativeTheme resolution). */
 export interface PrefsState {
   prefs: Prefs
@@ -276,6 +284,12 @@ export interface GlideApi {
   onFindClose(cb: () => void): () => void
   /** Cmd-L pressed: focus + select the address bar. */
   onFocusAddress(cb: () => void): () => void
+  /** Cmd-Y pressed: open the history page. */
+  onOpenHistory(cb: () => void): () => void
+  /** Recent history for an account (query '' = recent-first). */
+  listHistory(accountId: string, query: string): Promise<HistoryItem[]>
+  /** Clear all history for an account. */
+  clearHistory(accountId: string): Promise<void>
   /** Omnibox text changed; rect = address field bounds (window coords). */
   omniboxInput(
     text: string,

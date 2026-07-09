@@ -186,6 +186,13 @@ const api: GlideApi = {
     ipcRenderer.on('menu:focus-address', listener)
     return () => ipcRenderer.removeListener('menu:focus-address', listener)
   },
+  onOpenHistory: (cb) => {
+    const listener = (): void => cb()
+    ipcRenderer.on('menu:history', listener)
+    return () => ipcRenderer.removeListener('menu:history', listener)
+  },
+  listHistory: (accountId, query) => ipcRenderer.invoke('history:list', accountId, query),
+  clearHistory: (accountId) => ipcRenderer.invoke('history:clear', accountId),
   omniboxInput: (text, rect) => ipcRenderer.invoke('omnibox:input', text, rect),
   omniboxNav: (delta) => ipcRenderer.invoke('omnibox:nav', delta),
   omniboxHide: () => ipcRenderer.invoke('omnibox:hide'),

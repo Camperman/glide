@@ -9,6 +9,7 @@ import { AccountDialog, type DialogValues } from './AccountDialog'
 import { ShortcutDialog, type ShortcutValues } from './ShortcutDialog'
 import { Downloads } from './Downloads'
 import { FindBar } from './FindBar'
+import { HistoryDialog } from './HistoryDialog'
 import { PreferencesDialog } from './PreferencesDialog'
 import type {
   AccountSummary,
@@ -63,6 +64,7 @@ export function App(): JSX.Element {
   const [findOpen, setFindOpen] = useState(false)
   const [targetUrl, setTargetUrl] = useState('')
   const [bookmarkDialog, setBookmarkDialog] = useState<BookmarkDialogState | null>(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   useEffect(() => {
     void window.glide.listAccounts().then(setAccounts)
@@ -86,6 +88,7 @@ export function App(): JSX.Element {
     const offPrefs = window.glide.onPrefsChanged(setPrefsState)
     const offOpenPrefs = window.glide.onOpenPreferences(() => setPrefsOpen(true))
     const offFindOpen = window.glide.onFindOpen(() => setFindOpen(true))
+    const offHistory = window.glide.onOpenHistory(() => setHistoryOpen(true))
     const offFindClose = window.glide.onFindClose(() => setFindOpen(false))
     const offTarget = window.glide.onTargetUrl(setTargetUrl)
     const offActive = window.glide.onActiveChanged(setActiveId)
@@ -154,6 +157,7 @@ export function App(): JSX.Element {
       offOpenPrefs()
       offFindOpen()
       offFindClose()
+      offHistory()
       offTarget()
       offEditBookmark()
       offEditAccount()
@@ -191,9 +195,17 @@ export function App(): JSX.Element {
   // is open and restore it when the modal closes.
   useEffect(() => {
     void window.glide.setOverlay(
-      Boolean(dialog || shortcutDialog || bookmarkDialog || importOpen || downloadsOpen || prefsOpen)
+      Boolean(
+        dialog ||
+          shortcutDialog ||
+          bookmarkDialog ||
+          importOpen ||
+          downloadsOpen ||
+          prefsOpen ||
+          historyOpen
+      )
     )
-  }, [dialog, shortcutDialog, bookmarkDialog, importOpen, downloadsOpen, prefsOpen])
+  }, [dialog, shortcutDialog, bookmarkDialog, importOpen, downloadsOpen, prefsOpen, historyOpen])
 
   // Theme: main owns resolution (nativeTheme + appearance pref) and pushes the
   // resolved dark/light with every prefs broadcast — one source of truth.
@@ -412,6 +424,15 @@ export function App(): JSX.Element {
             setBookmarkDialog(null)
           }}
           onCancel={() => setBookmarkDialog(null)}
+        />
+      )}
+
+      {historyOpen && activeId && (
+        <HistoryDialog
+          accountId={activeId}
+          accountLabel={accounts.find((a) => a.id === activeId)?.label ?? ''}
+          onOpenUrl={(url) => void window.glide.openBookmark(activeId, url)}
+          onClose={() => setHistoryOpen(false)}
         />
       )}
 

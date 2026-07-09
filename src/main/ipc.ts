@@ -2,6 +2,7 @@ import { BrowserWindow, app, dialog, ipcMain, session, type IpcMainInvokeEvent }
 import type { AccountManager } from './accounts'
 import type { DownloadManager } from './downloads'
 import type { ExtensionManager } from './extensions'
+import type { HistoryManager } from './history'
 import type { OmniboxManager } from './omnibox'
 import type { PrefsManager } from './prefs'
 import type {
@@ -23,7 +24,8 @@ export function registerIpc(
   downloads: DownloadManager,
   prefs: PrefsManager,
   extensions: ExtensionManager,
-  omnibox: OmniboxManager
+  omnibox: OmniboxManager,
+  history: HistoryManager
 ): void {
   const winOf = (event: IpcMainInvokeEvent): BrowserWindow | null =>
     BrowserWindow.fromWebContents(event.sender)
@@ -213,6 +215,10 @@ export function registerIpc(
     app.setAsDefaultProtocolClient('http')
     app.setAsDefaultProtocolClient('https')
   })
+  ipcMain.handle('history:list', (_e, accountId: string, query: string) =>
+    history.list(accountId, query, 200)
+  )
+  ipcMain.handle('history:clear', (_e, accountId: string) => history.clear(accountId))
   ipcMain.handle('extensions:list', (_e, accountId: string) => extensions.list(accountId))
   ipcMain.handle('extensions:uninstall', (_e, accountId: string, extensionId: string) =>
     extensions.uninstall(accountId, extensionId)

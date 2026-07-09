@@ -123,6 +123,8 @@ interface Tab {
   lastActive: number
   audible?: boolean
   muted?: boolean
+  /** Recent renderer-crash timestamps (rate-limits auto-reload). */
+  crashTimes?: number[]
 }
 
 /** Per-window state for a single account (its open tabs in that window). */
@@ -571,6 +573,18 @@ export class AccountManager implements ExtensionTabDelegate {
 
     // Rebuilt views (after a discard) keep the user's mute choice.
     if (tab.muted) wc.setAudioMuted(true)
+
+    // A crashed page renderer would otherwise sit blank until the user
+    // manually reloads — bring it back automatically (max twice a minute,
+    // so a page that crashes on load doesn't reload-loop).
+    wc.on('render-process-gone', (_e, details) => {
+      if (details.reason === 'clean-exit' || details.reason === 'killed') return
+      const now = Date.now()
+      tab.crashTimes = (tab.crashTimes ?? []).filter((t) => now - t < 60_000)
+      if (tab.crashTimes.length >= 2) return
+      tab.crashTimes.push(now)
+      if (!wc.isDestroyed()) wc.reload()
+    })
 
     // Find-in-page results → the find bar's "3/17" counter.
     wc.on('found-in-page', (_e, result) => {

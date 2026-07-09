@@ -2,12 +2,9 @@ import { app } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
-export interface HistoryEntry {
-  url: string
-  title: string
-  visits: number
-  lastVisit: number
-}
+import type { HistoryItem } from '../shared/types'
+
+export type HistoryEntry = HistoryItem
 
 interface HistoryFile {
   version: 1
@@ -94,6 +91,20 @@ export class HistoryManager {
     }
     scored.sort((a, b) => b.score - a.score)
     return scored.slice(0, limit).map((s) => s.entry)
+  }
+
+  /** Browse view (Cmd-Y): recent-first, optionally filtered. */
+  list(accountId: string, query: string, limit: number): HistoryEntry[] {
+    if (query.trim()) return this.query(accountId, query, limit)
+    return [...(this.data.entries[accountId] ?? [])]
+      .sort((a, b) => b.lastVisit - a.lastVisit)
+      .slice(0, limit)
+  }
+
+  /** Clear all history for one account (Cmd-Y page's Clear button). */
+  clear(accountId: string): void {
+    delete this.data.entries[accountId]
+    this.scheduleSave()
   }
 
   private scheduleSave(): void {

@@ -31,6 +31,8 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 23 | Auto-update (electron-updater + GitHub Releases) | ✅ |
 | 24 | Polish: tab audio indicators + hover link readout | ✅ |
 | 25 | Tab restore, Cmd-D bookmarks, dock badge, richer context menu | ✅ |
+| 26 | Incognito sessions (Cmd-Shift-N, memory-only partition) | ✅ |
+| 27 | Crash auto-recovery + history page (Cmd-Y) | ✅ |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining polish explicitly requested
@@ -71,6 +73,16 @@ method instead** — on Google's "Something went wrong / Make sure Bluetooth is
 on" screen, click **Try another way** → "Tap Yes on your phone" (internet-based,
 not BLE) / authenticator code / password / backup code. Sessions persist, so
 this is one-time per account. Revisit only if we ever add Developer-ID signing.
+
+### Phase 26–27 notes — incognito, crash recovery, history page (2026-07-08)
+- **Incognito (Cmd-Shift-N)**: ephemeral account on a memory-only partition
+  (no `persist:` prefix). Full chrome reuse; no history recording, no
+  extensions, never persisted (verified by automated relaunch test); dashed
+  🕶 avatar; remove via right-click or quit.
+- **Crash recovery**: `render-process-gone` (except clean-exit/killed) →
+  auto-reload, max twice per minute per tab to avoid crash loops.
+- **History page (Cmd-Y)**: per-account browser with search, relative times,
+  click-to-open, and Clear History.
 
 ### Phase 25 notes — daily-driver gaps (2026-07-08)
 - **Tab restore**: the primary window's open tabs (per account, incl. which

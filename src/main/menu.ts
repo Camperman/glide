@@ -15,6 +15,7 @@ export interface MenuHandlers {
   focusAddress: () => void
   find: () => void
   bookmarkPage: () => void
+  showHistory: () => void
   print: () => void
   zoomIn: () => void
   zoomOut: () => void
@@ -175,6 +176,16 @@ export function buildAppMenu(handlers: MenuHandlers): void {
         },
         { type: 'separator' },
         { label: 'Import from Chrome…', click: () => handlers.importBookmarks() }
+      ]
+    },
+    {
+      label: 'History',
+      submenu: [
+        {
+          label: 'Show History',
+          accelerator: 'CommandOrControl+Y',
+          click: () => handlers.showHistory()
+        }
       ]
     },
     {

@@ -100,6 +100,7 @@ function installMenu(): void {
       const win = focused()
       if (win) accounts?.bookmarkActivePage(win)
     },
+    showHistory: () => focused()?.webContents.send('menu:history'),
     print: () => {
       const win = focused()
       if (win) accounts?.printActive(win)
@@ -234,7 +235,7 @@ app.whenReady().then(() => {
     schedulePersist()
   })
   const omnibox = new OmniboxManager(accounts, history, prefs)
-  registerIpc(accounts, createWindow, downloads, prefs, extensions, omnibox)
+  registerIpc(accounts, createWindow, downloads, prefs, extensions, omnibox, history)
 
   const configs: AccountConfig[] = [...state.accounts]
     .sort((a, b) => a.order - b.order)
