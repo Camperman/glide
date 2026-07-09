@@ -63,6 +63,7 @@ const api: FlitApi = {
     return () => ipcRenderer.removeListener('apps:state', listener)
   },
   getLayout: () => ipcRenderer.invoke('layout:get'),
+  setLayout: (layout) => ipcRenderer.invoke('layout:set', layout),
   onLayoutChanged: (cb) => {
     const listener = (_event: unknown, layout: AppRailLayout): void => cb(layout)
     ipcRenderer.on('layout:changed', listener)

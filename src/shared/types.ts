@@ -218,6 +218,8 @@ export interface FlitApi {
   /** Subscribe to the active profile's app rail state. Returns an unsubscribe fn. */
   onAppsState(cb: (state: AppsState) => void): () => void
   getLayout(): Promise<AppRailLayout>
+  /** Move the apps bar (left rail / top row) — same control as View menu. */
+  setLayout(layout: AppRailLayout): Promise<void>
   /** Subscribe to app-rail layout changes (toggled from the View menu). */
   onLayoutChanged(cb: (layout: AppRailLayout) => void): () => void
   getBookmarks(accountId: string): Promise<BookmarkNode[]>

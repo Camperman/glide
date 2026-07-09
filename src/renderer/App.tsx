@@ -493,6 +493,7 @@ export function App(): JSX.Element {
       {prefsOpen && prefsState && (
         <PreferencesDialog
           prefs={prefsState.prefs}
+          layout={layout}
           dark={prefsState.dark}
           accounts={accounts}
           activeAccountId={activeId}

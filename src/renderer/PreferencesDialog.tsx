@@ -10,6 +10,8 @@ import type {
 
 interface PreferencesDialogProps {
   prefs: Prefs
+  /** Current app-rail layout (owned by main; same setting as View menu). */
+  layout: 'left' | 'top'
   /** Resolved appearance (drives which swatch variant is previewed). */
   dark: boolean
   accounts: AccountSummary[]
@@ -35,6 +37,7 @@ const WEB_STORE_URL = 'https://chromewebstore.google.com/'
 
 export function PreferencesDialog({
   prefs,
+  layout,
   dark,
   accounts,
   activeAccountId,
@@ -131,6 +134,26 @@ export function PreferencesDialog({
                       </button>
                     )
                   })}
+                </div>
+              </div>
+
+              <div className="prefs__row">
+                <label>Apps bar position</label>
+                <div className="prefs__segmented">
+                  <button
+                    type="button"
+                    className={layout === 'left' ? 'is-active' : ''}
+                    onClick={() => void window.flit.setLayout('left')}
+                  >
+                    Left sidebar
+                  </button>
+                  <button
+                    type="button"
+                    className={layout === 'top' ? 'is-active' : ''}
+                    onClick={() => void window.flit.setLayout('top')}
+                  >
+                    Top bar
+                  </button>
                 </div>
               </div>
 

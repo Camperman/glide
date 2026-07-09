@@ -286,13 +286,23 @@ app.whenReady().then(() => {
     schedulePersist()
   })
   const omnibox = new OmniboxManager(accounts, history, prefs)
-  registerIpc(accounts, createWindow, downloads, prefs, extensions, omnibox, history, {
-    get: () => firstRun,
-    clear: () => {
-      firstRun = false
-      persistNow()
-    }
-  })
+  registerIpc(
+    accounts,
+    createWindow,
+    downloads,
+    prefs,
+    extensions,
+    omnibox,
+    history,
+    {
+      get: () => firstRun,
+      clear: () => {
+        firstRun = false
+        persistNow()
+      }
+    },
+    () => installMenu()
+  )
 
   const configs: AccountConfig[] = [...state.accounts]
     .sort((a, b) => a.order - b.order)

@@ -27,7 +27,8 @@ export function registerIpc(
   extensions: ExtensionManager,
   omnibox: OmniboxManager,
   history: HistoryManager,
-  firstRun: { get: () => boolean; clear: () => void }
+  firstRun: { get: () => boolean; clear: () => void },
+  onLayoutSet?: () => void
 ): void {
   const winOf = (event: IpcMainInvokeEvent): BrowserWindow | null =>
     BrowserWindow.fromWebContents(event.sender)
@@ -190,6 +191,10 @@ export function registerIpc(
   )
 
   ipcMain.handle('layout:get', () => accounts.getLayout())
+  ipcMain.handle('layout:set', (_e, layout: 'left' | 'top') => {
+    accounts.setLayout(layout)
+    onLayoutSet?.() // rebuild the menu so its radio reflects the new choice
+  })
   ipcMain.handle('bookmarks:list', (_e, accountId: string) => accounts.getBookmarks(accountId))
   ipcMain.handle('bookmarks:bar-visible', () => accounts.getBookmarksBarVisible())
   ipcMain.handle('bookmarks:chrome-profiles', () => accounts.getChromeProfiles())
