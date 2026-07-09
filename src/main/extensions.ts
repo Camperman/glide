@@ -6,7 +6,7 @@ import { partitionFor } from './accounts'
 import type { ExtensionInfo } from '../shared/types'
 
 /**
- * How the extension system reaches back into Glide's tab model. Implemented by
+ * How the extension system reaches back into Flit's tab model. Implemented by
  * AccountManager; wired in index.ts (avoids a circular construction).
  */
 export interface ExtensionTabDelegate {
@@ -21,7 +21,7 @@ export interface ExtensionTabDelegate {
 /**
  * Chrome-extension support, one isolated extension environment per account
  * partition (like Chrome profiles). Installs come from the Chrome Web Store
- * visited inside a Glide tab; installed extensions persist under
+ * visited inside a Flit tab; installed extensions persist under
  * userData/Extensions/<accountId> and reload at startup.
  */
 export class ExtensionManager {

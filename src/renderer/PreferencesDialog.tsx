@@ -46,22 +46,22 @@ export function PreferencesDialog({
   const [extensions, setExtensions] = useState<ExtensionInfo[]>([])
   const [newTabDraft, setNewTabDraft] = useState(prefs.newTabUrl)
 
-  const patch = (p: Partial<Prefs>): void => void window.glide.setPrefs(p)
+  const patch = (p: Partial<Prefs>): void => void window.flit.setPrefs(p)
 
   useEffect(() => {
-    void window.glide.isDefaultBrowser().then(setIsDefault)
+    void window.flit.isDefaultBrowser().then(setIsDefault)
   }, [])
 
   useEffect(() => {
-    if (extAccount) void window.glide.listExtensions(extAccount).then(setExtensions)
+    if (extAccount) void window.flit.listExtensions(extAccount).then(setExtensions)
     else setExtensions([])
   }, [extAccount])
 
   const uninstall = (id: string): void => {
     if (!extAccount) return
-    void window.glide
+    void window.flit
       .uninstallExtension(extAccount, id)
-      .then(() => window.glide.listExtensions(extAccount))
+      .then(() => window.flit.listExtensions(extAccount))
       .then(setExtensions)
   }
 
@@ -143,7 +143,7 @@ export function PreferencesDialog({
               </div>
 
               <div className="prefs__row">
-                <label htmlFor="pref-login">Launch Glide at login</label>
+                <label htmlFor="pref-login">Launch Flit at login</label>
                 <input
                   id="pref-login"
                   type="checkbox"
@@ -155,15 +155,15 @@ export function PreferencesDialog({
               <div className="prefs__row">
                 <label>Default browser</label>
                 {isDefault ? (
-                  <span className="prefs__hint">Glide is your default browser</span>
+                  <span className="prefs__hint">Flit is your default browser</span>
                 ) : (
                   <button
                     type="button"
                     className="btn"
                     onClick={() =>
-                      void window.glide
+                      void window.flit
                         .makeDefaultBrowser()
-                        .then(() => window.glide.isDefaultBrowser())
+                        .then(() => window.flit.isDefaultBrowser())
                         .then(setIsDefault)
                     }
                   >
@@ -241,7 +241,7 @@ export function PreferencesDialog({
                 className="btn"
                 disabled={!extAccount}
                 onClick={() => {
-                  if (extAccount) void window.glide.openBookmark(extAccount, WEB_STORE_URL)
+                  if (extAccount) void window.flit.openBookmark(extAccount, WEB_STORE_URL)
                   onClose()
                 }}
               >
@@ -259,7 +259,7 @@ export function PreferencesDialog({
                   className="btn prefs__path"
                   title={prefs.downloadsDir || '~/Downloads'}
                   onClick={() =>
-                    void window.glide.chooseDownloadsDir().then((dir) => {
+                    void window.flit.chooseDownloadsDir().then((dir) => {
                       if (dir) patch({ downloadsDir: dir })
                     })
                   }

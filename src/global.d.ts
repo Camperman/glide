@@ -1,8 +1,8 @@
-import type { GlideApi } from './shared/types'
+import type { FlitApi } from './shared/types'
 
 declare global {
   interface Window {
-    glide: GlideApi
+    flit: FlitApi
   }
 
   namespace JSX {

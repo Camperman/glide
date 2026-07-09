@@ -4,7 +4,7 @@ import { autoUpdater } from 'electron-updater'
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
 
 /**
- * Auto-update from GitHub Releases (Camperman/glide, public — no token
+ * Auto-update from GitHub Releases (Camperman/flit, public — no token
  * needed to download). Checks shortly after launch and every few hours;
  * downloads in the background and offers a restart when ready. No-ops in
  * dev and for unsigned local builds (updates require a valid signature).
@@ -26,7 +26,7 @@ export function startAutoUpdate(): void {
     void dialog
       .showMessageBox({
         type: 'info',
-        message: `Glide ${info.version} is ready to install`,
+        message: `Flit ${info.version} is ready to install`,
         detail: 'The update was downloaded in the background.',
         buttons: ['Restart Now', 'Later'],
         defaultId: 0,

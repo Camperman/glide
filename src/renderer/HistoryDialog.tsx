@@ -29,11 +29,11 @@ export function HistoryDialog({
   const [items, setItems] = useState<HistoryItem[]>([])
 
   useEffect(() => {
-    void window.glide.listHistory(accountId, query).then(setItems)
+    void window.flit.listHistory(accountId, query).then(setItems)
   }, [accountId, query])
 
   const clear = (): void => {
-    void window.glide.clearHistory(accountId).then(() => setItems([]))
+    void window.flit.clearHistory(accountId).then(() => setItems([]))
   }
 
   return (

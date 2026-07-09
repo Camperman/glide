@@ -43,11 +43,11 @@ export function Palette({ accounts, activeId, tabs, onClose }: PaletteProps): JS
           kind: 'account',
           label: account.label,
           detail: 'Account',
-          run: () => void window.glide.switchAccount(account.id)
+          run: () => void window.flit.switchAccount(account.id)
         })
       }
       for (const account of accounts) {
-        const shortcuts = await window.glide.getShortcuts(account.id)
+        const shortcuts = await window.flit.getShortcuts(account.id)
         for (const s of shortcuts) {
           out.push({
             key: `app-${account.id}-${s.id}`,
@@ -55,8 +55,8 @@ export function Palette({ accounts, activeId, tabs, onClose }: PaletteProps): JS
             label: `${account.label} › ${s.label}`,
             detail: 'App',
             run: () => {
-              void window.glide.switchAccount(account.id).then(() => {
-                void window.glide.openShortcut(account.id, s.id)
+              void window.flit.switchAccount(account.id).then(() => {
+                void window.flit.openShortcut(account.id, s.id)
               })
             }
           })
@@ -69,7 +69,7 @@ export function Palette({ accounts, activeId, tabs, onClose }: PaletteProps): JS
           kind: 'tab',
           label: tab.title,
           detail: 'Tab',
-          run: () => void window.glide.activateTab(activeId, tab.id)
+          run: () => void window.flit.activateTab(activeId, tab.id)
         })
       }
       if (!cancelled) setEntries(out)

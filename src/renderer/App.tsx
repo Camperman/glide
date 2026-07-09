@@ -71,38 +71,38 @@ export function App(): JSX.Element {
   const [paletteOpen, setPaletteOpen] = useState(false)
 
   useEffect(() => {
-    void window.glide.listAccounts().then(setAccounts)
-    void window.glide.getActive().then(setActiveId)
-    void window.glide.getNavState().then(setNav)
-    void window.glide.getUnread().then(setUnread)
-    void window.glide.getLayout().then(setLayout)
-    void window.glide.getBookmarksBarVisible().then(setBookmarksBar)
-    const offLayout = window.glide.onLayoutChanged(setLayout)
-    const offBmVisible = window.glide.onBookmarksBarVisible(setBookmarksBar)
-    const offBookmarks = window.glide.onBookmarksState(({ accountId, bookmarks: next }) =>
+    void window.flit.listAccounts().then(setAccounts)
+    void window.flit.getActive().then(setActiveId)
+    void window.flit.getNavState().then(setNav)
+    void window.flit.getUnread().then(setUnread)
+    void window.flit.getLayout().then(setLayout)
+    void window.flit.getBookmarksBarVisible().then(setBookmarksBar)
+    const offLayout = window.flit.onLayoutChanged(setLayout)
+    const offBmVisible = window.flit.onBookmarksBarVisible(setBookmarksBar)
+    const offBookmarks = window.flit.onBookmarksState(({ accountId, bookmarks: next }) =>
       setActiveId((current) => {
         if (accountId === current) setBookmarks(next)
         return current
       })
     )
-    const offImport = window.glide.onImportBookmarks(() => setImportOpen(true))
-    void window.glide.getDownloads().then(setDownloads)
-    const offDownloads = window.glide.onDownloadsState(setDownloads)
-    void window.glide.isFirstRun().then(setWelcomeOpen)
-    void window.glide.getPrefs().then(setPrefsState)
-    const offPrefs = window.glide.onPrefsChanged(setPrefsState)
-    const offOpenPrefs = window.glide.onOpenPreferences(() => setPrefsOpen(true))
-    const offFindOpen = window.glide.onFindOpen(() => setFindOpen(true))
-    const offHistory = window.glide.onOpenHistory(() => setHistoryOpen(true))
-    const offPalette = window.glide.onOpenPalette(() => setPaletteOpen(true))
-    const offFindClose = window.glide.onFindClose(() => setFindOpen(false))
-    const offTarget = window.glide.onTargetUrl(setTargetUrl)
-    const offActive = window.glide.onActiveChanged(setActiveId)
-    const offNav = window.glide.onNavState(setNav)
-    const offUnread = window.glide.onUnread(({ id, count }) =>
+    const offImport = window.flit.onImportBookmarks(() => setImportOpen(true))
+    void window.flit.getDownloads().then(setDownloads)
+    const offDownloads = window.flit.onDownloadsState(setDownloads)
+    void window.flit.isFirstRun().then(setWelcomeOpen)
+    void window.flit.getPrefs().then(setPrefsState)
+    const offPrefs = window.flit.onPrefsChanged(setPrefsState)
+    const offOpenPrefs = window.flit.onOpenPreferences(() => setPrefsOpen(true))
+    const offFindOpen = window.flit.onFindOpen(() => setFindOpen(true))
+    const offHistory = window.flit.onOpenHistory(() => setHistoryOpen(true))
+    const offPalette = window.flit.onOpenPalette(() => setPaletteOpen(true))
+    const offFindClose = window.flit.onFindClose(() => setFindOpen(false))
+    const offTarget = window.flit.onTargetUrl(setTargetUrl)
+    const offActive = window.flit.onActiveChanged(setActiveId)
+    const offNav = window.flit.onNavState(setNav)
+    const offUnread = window.flit.onUnread(({ id, count }) =>
       setUnread((prev) => ({ ...prev, [id]: count }))
     )
-    const offApps = window.glide.onAppsState(({ accountId, apps: next, activeShortcutId }) =>
+    const offApps = window.flit.onAppsState(({ accountId, apps: next, activeShortcutId }) =>
       setActiveId((current) => {
         if (accountId === current) {
           setApps(next)
@@ -111,20 +111,20 @@ export function App(): JSX.Element {
         return current
       })
     )
-    const offTabs = window.glide.onTabsState(({ accountId, tabs: next }) =>
+    const offTabs = window.flit.onTabsState(({ accountId, tabs: next }) =>
       setActiveId((current) => {
         if (accountId === current) setTabs(next)
         return current
       })
     )
-    const offList = window.glide.onAccountsUpdated((next) => {
+    const offList = window.flit.onAccountsUpdated((next) => {
       setAccounts(next)
       setActiveId((current) =>
         current && next.some((a) => a.id === current) ? current : next[0]?.id
       )
     })
-    const offEditBookmark = window.glide.onEditBookmark(({ accountId, bookmarkId }) => {
-      void window.glide.getBookmarks(accountId).then((nodes) => {
+    const offEditBookmark = window.flit.onEditBookmark(({ accountId, bookmarkId }) => {
+      void window.flit.getBookmarks(accountId).then((nodes) => {
         const flat: Array<{ id: string; title: string; url: string }> = []
         const walk = (list: typeof nodes): void => {
           for (const n of list) {
@@ -143,8 +143,8 @@ export function App(): JSX.Element {
         }
       })
     })
-    const offEditAccount = window.glide.onEditAccount((id) => openEdit(id))
-    const offEditShortcut = window.glide.onEditShortcut(({ shortcutId }) =>
+    const offEditAccount = window.flit.onEditAccount((id) => openEdit(id))
+    const offEditShortcut = window.flit.onEditShortcut(({ shortcutId }) =>
       openEditShortcut(shortcutId)
     )
     return () => {
@@ -181,19 +181,19 @@ export function App(): JSX.Element {
       setTabs([])
       return
     }
-    void window.glide.getApps(activeId).then(({ apps: next, activeShortcutId }) => {
+    void window.flit.getApps(activeId).then(({ apps: next, activeShortcutId }) => {
       setApps(next)
       setActiveApp(activeShortcutId)
     })
-    void window.glide.getTabs(activeId).then(setTabs)
-    void window.glide.getBookmarks(activeId).then(setBookmarks)
-    void window.glide.listExtensions(activeId).then((list) => setHasExtensions(list.length > 0))
+    void window.flit.getTabs(activeId).then(setTabs)
+    void window.flit.getBookmarks(activeId).then(setBookmarks)
+    void window.flit.listExtensions(activeId).then((list) => setHasExtensions(list.length > 0))
   }, [activeId])
 
   // Prefs dialog can install/uninstall extensions — refresh on close.
   useEffect(() => {
     if (!prefsOpen && activeId) {
-      void window.glide.listExtensions(activeId).then((list) => setHasExtensions(list.length > 0))
+      void window.flit.listExtensions(activeId).then((list) => setHasExtensions(list.length > 0))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefsOpen])
@@ -201,7 +201,7 @@ export function App(): JSX.Element {
   // A native view paints above DOM, so hide the active web view while a modal
   // is open and restore it when the modal closes.
   useEffect(() => {
-    void window.glide.setOverlay(
+    void window.flit.setOverlay(
       Boolean(
         dialog ||
           shortcutDialog ||
@@ -249,18 +249,18 @@ export function App(): JSX.Element {
 
   const handleSelect = (id: string): void => {
     setActiveId(id)
-    void window.glide.switchAccount(id)
+    void window.flit.switchAccount(id)
   }
 
   const handleSubmit = (values: DialogValues): void => {
     if (dialog?.mode === 'add') {
-      void window.glide.addAccount({
+      void window.flit.addAccount({
         label: values.label,
         color: values.color,
         homeUrl: values.homeUrl || DEFAULT_HOME
       })
     } else if (dialog?.mode === 'edit' && dialog.id) {
-      void window.glide.updateAccount(dialog.id, { label: values.label, color: values.color })
+      void window.flit.updateAccount(dialog.id, { label: values.label, color: values.color })
     }
     setDialog(null)
   }
@@ -269,7 +269,7 @@ export function App(): JSX.Element {
     setDialog({ mode: 'add', initial: { label: '', color: '#4c8bf5', homeUrl: DEFAULT_HOME } })
 
   const openEdit = (id: string): void => {
-    void window.glide.listAccounts().then((list) => {
+    void window.flit.listAccounts().then((list) => {
       const account = list.find((a) => a.id === id)
       if (!account) return
       setDialog({
@@ -285,7 +285,7 @@ export function App(): JSX.Element {
 
   const openEditShortcut = (shortcutId: string): void => {
     if (!activeId) return
-    void window.glide.getShortcuts(activeId).then((list) => {
+    void window.flit.getShortcuts(activeId).then((list) => {
       const shortcut = list.find((s) => s.id === shortcutId)
       if (!shortcut) return
       setShortcutDialog({
@@ -299,9 +299,9 @@ export function App(): JSX.Element {
   const handleShortcutSubmit = (values: ShortcutValues): void => {
     if (!activeId) return
     if (shortcutDialog?.mode === 'add') {
-      void window.glide.addShortcut(activeId, values)
+      void window.flit.addShortcut(activeId, values)
     } else if (shortcutDialog?.mode === 'edit' && shortcutDialog.shortcutId) {
-      void window.glide.updateShortcut(activeId, shortcutDialog.shortcutId, values)
+      void window.flit.updateShortcut(activeId, shortcutDialog.shortcutId, values)
     }
     setShortcutDialog(null)
   }
@@ -311,16 +311,16 @@ export function App(): JSX.Element {
     activeId: activeApp,
     disabled: !activeId,
     onOpen: (shortcutId: string) => {
-      if (activeId) void window.glide.openShortcut(activeId, shortcutId)
+      if (activeId) void window.flit.openShortcut(activeId, shortcutId)
     },
     onReorder: (shortcutIds: string[]) => {
       if (!activeId) return
       setApps((prev) => shortcutIds.map((id) => prev.find((a) => a.id === id)!).filter(Boolean))
-      void window.glide.reorderShortcuts(activeId, shortcutIds)
+      void window.flit.reorderShortcuts(activeId, shortcutIds)
     },
     onAdd: openAddShortcut,
     onContextMenu: (shortcutId: string) => {
-      if (activeId) void window.glide.showShortcutMenu(activeId, shortcutId)
+      if (activeId) void window.flit.showShortcutMenu(activeId, shortcutId)
     }
   }
 
@@ -332,24 +332,24 @@ export function App(): JSX.Element {
           tabs={tabs}
           disabled={!activeId}
           onActivate={(tabId) => {
-            if (activeId) void window.glide.activateTab(activeId, tabId)
+            if (activeId) void window.flit.activateTab(activeId, tabId)
           }}
           onClose={(tabId) => {
-            if (activeId) void window.glide.closeTab(activeId, tabId)
+            if (activeId) void window.flit.closeTab(activeId, tabId)
           }}
           onReorder={(tabIds) => {
             if (!activeId) return
             setTabs((prev) => tabIds.map((id) => prev.find((t) => t.id === id)!).filter(Boolean))
-            void window.glide.reorderTabs(activeId, tabIds)
+            void window.flit.reorderTabs(activeId, tabIds)
           }}
           onToggleMute={(tabId) => {
-            if (activeId) void window.glide.toggleTabMute(activeId, tabId)
+            if (activeId) void window.flit.toggleTabMute(activeId, tabId)
           }}
           onContextMenu={(tabId) => {
-            if (activeId) void window.glide.showTabMenu(activeId, tabId)
+            if (activeId) void window.flit.showTabMenu(activeId, tabId)
           }}
           onNew={() => {
-            if (activeId) void window.glide.newTab(activeId)
+            if (activeId) void window.flit.newTab(activeId)
           }}
         />
         {layout === 'top' && <AppRail {...appRailProps} variant="top" />}
@@ -363,7 +363,7 @@ export function App(): JSX.Element {
           onSelect={handleSelect}
           onAdd={openAdd}
           onOpenPreferences={() => setPrefsOpen(true)}
-          onContextMenu={(id) => void window.glide.showAccountMenu(id)}
+          onContextMenu={(id) => void window.flit.showAccountMenu(id)}
         />
 
         {layout === 'left' && <AppRail {...appRailProps} variant="rail" />}
@@ -379,10 +379,10 @@ export function App(): JSX.Element {
                 : undefined
             }
             showActions={hasExtensions}
-            onBack={() => void window.glide.goBack()}
-            onForward={() => void window.glide.goForward()}
-            onReload={() => void window.glide.reload()}
-            onNavigate={(url) => void window.glide.navigate(url)}
+            onBack={() => void window.flit.goBack()}
+            onForward={() => void window.flit.goForward()}
+            onReload={() => void window.flit.reload()}
+            onNavigate={(url) => void window.flit.navigate(url)}
           >
             {targetUrl && <span className="topbar__target">{targetUrl}</span>}
             <Downloads
@@ -396,7 +396,7 @@ export function App(): JSX.Element {
             <FindBar
               onClose={() => {
                 setFindOpen(false)
-                void window.glide.stopFind()
+                void window.flit.stopFind()
               }}
             />
           )}
@@ -404,23 +404,23 @@ export function App(): JSX.Element {
             <BookmarksBar
               bookmarks={bookmarks}
               onOpen={(url) => {
-                if (activeId) void window.glide.openBookmark(activeId, url)
+                if (activeId) void window.flit.openBookmark(activeId, url)
               }}
               onOpenFolder={(folderId) => {
-                if (activeId) void window.glide.openBookmarkFolder(activeId, folderId)
+                if (activeId) void window.flit.openBookmarkFolder(activeId, folderId)
               }}
               onOpenOverflow={(ids) => {
-                if (activeId) void window.glide.openBookmarksOverflow(activeId, ids)
+                if (activeId) void window.flit.openBookmarksOverflow(activeId, ids)
               }}
               onContextMenu={(bookmarkId) => {
-                if (activeId) void window.glide.showBookmarkMenu(activeId, bookmarkId)
+                if (activeId) void window.flit.showBookmarkMenu(activeId, bookmarkId)
               }}
             />
           )}
           <main className="content" data-testid="content">
             {accounts.length === 0 && (
               <div className="placeholder">
-                <h1>Glide</h1>
+                <h1>Flit</h1>
                 <p>No accounts yet — click the + to add one.</p>
               </div>
             )}
@@ -451,7 +451,7 @@ export function App(): JSX.Element {
           mode="edit"
           initial={bookmarkDialog.initial}
           onSubmit={(values) => {
-            void window.glide.updateBookmark(bookmarkDialog.accountId, bookmarkDialog.bookmarkId, {
+            void window.flit.updateBookmark(bookmarkDialog.accountId, bookmarkDialog.bookmarkId, {
               title: values.label,
               url: values.url
             })
@@ -474,8 +474,8 @@ export function App(): JSX.Element {
         <WelcomeDialog
           initialLabel={accounts[0].label}
           onDone={(label, color) => {
-            void window.glide.updateAccount(accounts[0].id, { label, color })
-            void window.glide.completeFirstRun()
+            void window.flit.updateAccount(accounts[0].id, { label, color })
+            void window.flit.completeFirstRun()
             setWelcomeOpen(false)
           }}
         />
@@ -485,7 +485,7 @@ export function App(): JSX.Element {
         <HistoryDialog
           accountId={activeId}
           accountLabel={accounts.find((a) => a.id === activeId)?.label ?? ''}
-          onOpenUrl={(url) => void window.glide.openBookmark(activeId, url)}
+          onOpenUrl={(url) => void window.flit.openBookmark(activeId, url)}
           onClose={() => setHistoryOpen(false)}
         />
       )}
@@ -503,7 +503,7 @@ export function App(): JSX.Element {
       {importOpen && (
         <ChromeImportDialog
           onImport={(chromeDir) => {
-            if (activeId) void window.glide.importChromeBookmarks(activeId, chromeDir)
+            if (activeId) void window.flit.importChromeBookmarks(activeId, chromeDir)
             setImportOpen(false)
           }}
           onCancel={() => setImportOpen(false)}

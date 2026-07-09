@@ -7,12 +7,12 @@ interface ChromeImportDialogProps {
 }
 
 // Modal listing detected Chrome profiles; picking one imports its Bookmarks
-// bar into the active Glide profile.
+// bar into the active Flit profile.
 export function ChromeImportDialog({ onImport, onCancel }: ChromeImportDialogProps): JSX.Element {
   const [profiles, setProfiles] = useState<ChromeProfile[] | null>(null)
 
   useEffect(() => {
-    void window.glide.getChromeProfiles().then(setProfiles)
+    void window.flit.getChromeProfiles().then(setProfiles)
   }, [])
 
   return (

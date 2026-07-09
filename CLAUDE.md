@@ -1,6 +1,6 @@
-# Glide — instructions for Claude Code
+# Flit (formerly Glide) — instructions for Claude Code
 
-**Glide** is a personal macOS desktop app for running multiple isolated Google
+**Flit** (renamed from Glide, 2026-07-08) is a personal macOS desktop app for running multiple isolated Google
 accounts side by side, switching between them from a left sidebar. A scoped-down
 clone of Shift Browser's core feature. Not distributed; single user.
 

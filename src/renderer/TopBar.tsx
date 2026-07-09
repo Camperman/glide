@@ -37,7 +37,7 @@ export function TopBar({
 
   // Cmd-L: focus + select the address field.
   useEffect(() => {
-    return window.glide.onFocusAddress(() => {
+    return window.flit.onFocusAddress(() => {
       inputRef.current?.focus()
       inputRef.current?.select()
     })
@@ -45,7 +45,7 @@ export function TopBar({
 
   const submit = (e: FormEvent): void => {
     e.preventDefault()
-    void window.glide.omniboxHide()
+    void window.flit.omniboxHide()
     if (value.trim()) onNavigate(value.trim())
   }
 
@@ -53,7 +53,7 @@ export function TopBar({
     setValue(next)
     const rect = inputRef.current?.getBoundingClientRect()
     if (rect) {
-      void window.glide.omniboxInput(next, {
+      void window.flit.omniboxInput(next, {
         x: rect.x,
         y: rect.y,
         width: rect.width,
@@ -65,11 +65,11 @@ export function TopBar({
   const onKeyDown = (e: React.KeyboardEvent): void => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
-      void window.glide.omniboxNav(e.key === 'ArrowDown' ? 1 : -1).then((fill) => {
+      void window.flit.omniboxNav(e.key === 'ArrowDown' ? 1 : -1).then((fill) => {
         if (fill !== undefined) setValue(fill)
       })
     } else if (e.key === 'Escape') {
-      void window.glide.omniboxHide()
+      void window.flit.omniboxHide()
     }
   }
 
@@ -115,7 +115,7 @@ export function TopBar({
           onBlur={() => {
             // Delay so a mousedown on a suggestion lands before the dropdown
             // is dismissed (the dropdown is a separate native view).
-            setTimeout(() => void window.glide.omniboxHide(), 150)
+            setTimeout(() => void window.flit.omniboxHide(), 150)
           }}
         />
       </form>

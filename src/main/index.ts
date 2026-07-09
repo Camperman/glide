@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell } from 'electron'
 import { randomUUID } from 'crypto'
+import { existsSync, renameSync } from 'fs'
 import { join } from 'path'
 import { AccountManager, isExternalProtocol, type AccountConfig } from './accounts'
 import { DownloadManager } from './downloads'
@@ -12,14 +13,40 @@ import { registerIpc } from './ipc'
 import { buildAppMenu } from './menu'
 import { loadState, saveState, type PersistedState } from './persistence'
 
-// Give Glide its own userData directory (unpackaged Electron otherwise shares
+// Give Flit its own userData directory (unpackaged Electron otherwise shares
 // the generic "Electron" dir with every other dev app).
-app.setName('Glide')
+app.setName('Flit')
+
+// One-time migration: the app originally shipped as "Glide". Move the old
+// per-user data dir (sessions, logins, history, downloads) to the new name and
+// rename the state files inside it, so nothing is lost across the rebrand.
+function migrateFromGlide(): void {
+  if (process.env.FLIT_USER_DATA_DIR) return // tests use throwaway dirs
+  try {
+    const appData = app.getPath('appData')
+    const oldDir = join(appData, 'Glide')
+    const newDir = join(appData, 'Flit')
+    if (existsSync(oldDir) && !existsSync(newDir)) renameSync(oldDir, newDir)
+    const renames: Array<[string, string]> = [
+      ['glide-state.json', 'flit-state.json'],
+      ['glide-history.json', 'flit-history.json'],
+      ['glide-downloads.json', 'flit-downloads.json']
+    ]
+    for (const [oldName, newName] of renames) {
+      const oldPath = join(newDir, oldName)
+      const newPath = join(newDir, newName)
+      if (existsSync(oldPath) && !existsSync(newPath)) renameSync(oldPath, newPath)
+    }
+  } catch {
+    // best-effort; a failed migration just means a fresh start, not a crash
+  }
+}
+migrateFromGlide()
 
 // Tests point this at a throwaway dir so they don't collide with (or mutate) a
 // running app's data or single-instance lock. Must run before app is ready.
-if (process.env.GLIDE_USER_DATA_DIR) {
-  app.setPath('userData', process.env.GLIDE_USER_DATA_DIR)
+if (process.env.FLIT_USER_DATA_DIR) {
+  app.setPath('userData', process.env.FLIT_USER_DATA_DIR)
 }
 
 let accounts: AccountManager | undefined
@@ -126,7 +153,7 @@ function installMenu(): void {
       const win = focused()
       if (win) accounts?.printActive(win)
     },
-    // macOS shows its own "use Glide as your default browser?" confirmation.
+    // macOS shows its own "use Flit as your default browser?" confirmation.
     setDefaultBrowser: () => {
       app.setAsDefaultProtocolClient('http')
       app.setAsDefaultProtocolClient('https')
@@ -170,7 +197,7 @@ function createWindow(): void {
     // Only the first window restores the saved position; extra windows cascade.
     x: isFirst ? state.window?.x : undefined,
     y: isFirst ? state.window?.y : undefined,
-    title: 'Glide',
+    title: 'Flit',
     show: false,
     backgroundColor: prefs?.windowBackground() ?? '#202124',
     titleBarStyle: 'hiddenInset',
@@ -201,7 +228,7 @@ function createWindow(): void {
   })
 }
 
-// Only one Glide process per macOS user. Multiple processes would each open the
+// Only one Flit process per macOS user. Multiple processes would each open the
 // same per-user session partitions and fight over Chromium's LevelDB locks,
 // corrupting the data and crashing. A second launch opens a new window instead.
 const gotInstanceLock = app.requestSingleInstanceLock()
@@ -213,8 +240,8 @@ app.on('second-instance', () => {
   if (accounts) createWindow()
 })
 
-// Links sent to Glide by macOS (when Glide is the default browser, or
-// `open -a Glide <url>`). Can fire before ready/windows exist — queue those.
+// Links sent to Flit by macOS (when Flit is the default browser, or
+// `open -a Flit <url>`). Can fire before ready/windows exist — queue those.
 const pendingUrls: string[] = []
 app.on('open-url', (event, url) => {
   event.preventDefault()

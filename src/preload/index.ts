@@ -6,7 +6,7 @@ import type {
   AppsState,
   BookmarksState,
   DownloadInfo,
-  GlideApi,
+  FlitApi,
   NavState,
   PrefsState,
   Shortcut,
@@ -15,7 +15,7 @@ import type {
 
 // Typed, minimal bridge exposed to the renderer. The renderer holds no session
 // state — it sends intents to main and renders state pushed back.
-const api: GlideApi = {
+const api: FlitApi = {
   newWindow: () => ipcRenderer.invoke('window:new'),
   isFirstRun: () => ipcRenderer.invoke('app:first-run'),
   completeFirstRun: () => ipcRenderer.invoke('app:first-run-done'),
@@ -227,9 +227,9 @@ const api: GlideApi = {
   }
 }
 
-contextBridge.exposeInMainWorld('glide', api)
+contextBridge.exposeInMainWorld('flit', api)
 
 // Register the <browser-action-list> custom element (extension toolbar).
-// This preload only ever runs in Glide's own chrome UI — account views get
+// This preload only ever runs in Flit's own chrome UI — account views get
 // no preload — so no URL gating is needed.
 injectBrowserAction()

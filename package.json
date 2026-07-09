@@ -1,5 +1,5 @@
 {
-  "name": "glide",
+  "name": "flit",
   "version": "0.6.0",
   "description": "Multi-account Google workspace browser for macOS",
   "private": true,
@@ -32,8 +32,8 @@
     "vite": "^5.4.0"
   },
   "build": {
-    "appId": "com.bcamp.glide",
-    "productName": "Glide",
+    "appId": "com.bcamp.flit",
+    "productName": "Flit",
     "files": [
       "out/**/*",
       "package.json"
@@ -44,14 +44,14 @@
     "publish": {
       "provider": "github",
       "owner": "Camperman",
-      "repo": "glide"
+      "repo": "flit"
     },
     "dmg": {
       "sign": true
     },
     "mac": {
       "category": "public.app-category.productivity",
-      "icon": "assets/glide-app-icon.icns",
+      "icon": "assets/flit-app-icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",

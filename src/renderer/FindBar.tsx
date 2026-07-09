@@ -13,9 +13,9 @@ export function FindBar({ onClose }: FindBarProps): JSX.Element {
 
   useEffect(() => {
     inputRef.current?.focus()
-    const offResult = window.glide.onFindResult(setResult)
+    const offResult = window.flit.onFindResult(setResult)
     // Cmd-F while already open → refocus + select.
-    const offReopen = window.glide.onFindOpen(() => {
+    const offReopen = window.flit.onFindOpen(() => {
       inputRef.current?.focus()
       inputRef.current?.select()
     })
@@ -28,11 +28,11 @@ export function FindBar({ onClose }: FindBarProps): JSX.Element {
   const search = (value: string): void => {
     setText(value)
     if (!value) setResult(null)
-    void window.glide.findInPage(value, false, true)
+    void window.flit.findInPage(value, false, true)
   }
 
   const step = (forward: boolean): void => {
-    if (text) void window.glide.findInPage(text, true, forward)
+    if (text) void window.flit.findInPage(text, true, forward)
   }
 
   return (

@@ -183,8 +183,8 @@ export interface TabsState {
   tabs: TabInfo[]
 }
 
-/** The bridge exposed on `window.glide` in the renderer (see preload). */
-export interface GlideApi {
+/** The bridge exposed on `window.flit` in the renderer (see preload). */
+export interface FlitApi {
   /** Open a new app window (Cmd-N). */
   newWindow(): Promise<void>
   /** Fresh install? Drives the one-time welcome flow. */
@@ -278,7 +278,7 @@ export interface GlideApi {
   onActiveChanged(cb: (id: string) => void): () => void
   /** Subscribe to the account list changing (add/edit/remove). Returns an unsubscribe fn. */
   onAccountsUpdated(cb: (accounts: AccountSummary[]) => void): () => void
-  /** Fired when the user picks Glide → Preferences… in the menu (Cmd-,). */
+  /** Fired when the user picks Flit → Preferences… in the menu (Cmd-,). */
   onOpenPreferences(cb: () => void): () => void
   /** Cmd-F pressed: show the find bar (main already reserved its row). */
   onFindOpen(cb: () => void): () => void
@@ -317,9 +317,9 @@ export interface GlideApi {
   onPrefsChanged(cb: (state: PrefsState) => void): () => void
   /** Native folder picker for the downloads location ('' if cancelled). */
   chooseDownloadsDir(): Promise<string>
-  /** Is Glide the macOS default browser right now? */
+  /** Is Flit the macOS default browser right now? */
   isDefaultBrowser(): Promise<boolean>
-  /** Ask macOS to make Glide the default browser (shows a system dialog). */
+  /** Ask macOS to make Flit the default browser (shows a system dialog). */
   makeDefaultBrowser(): Promise<void>
   /** Chrome extensions installed in an account's partition. */
   listExtensions(accountId: string): Promise<ExtensionInfo[]>

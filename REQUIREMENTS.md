@@ -1,5 +1,9 @@
 # Glide — Requirements & Build Plan
 
+> **Note (2026-07-08):** the app has been renamed **Flit** (name collision with two
+> existing "Glide" browsers). This document predates the rename and keeps the
+> original name; PROGRESS.md tracks the rename as Phase 34.
+
 A personal, single-window desktop app for running multiple Google accounts side by side
 with true session isolation, switching between them from a left sidebar. A scoped-down,
 self-hosted clone of [Shift Browser](https://shift.com)'s core feature.

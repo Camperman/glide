@@ -18,7 +18,7 @@ export function WelcomeDialog({ initialLabel, onDone }: WelcomeDialogProps): JSX
   return (
     <div className="modal-overlay">
       <div className="modal welcome" data-testid="welcome">
-        <h1>Welcome to Glide</h1>
+        <h1>Welcome to Flit</h1>
         <p className="welcome__lede">
           Every account in the left sidebar is a fully isolated Google session — sign in
           once and it stays signed in, without logging out your other accounts.

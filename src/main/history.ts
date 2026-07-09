@@ -24,7 +24,7 @@ export class HistoryManager {
   private saveTimer: NodeJS.Timeout | undefined
 
   private path(): string {
-    return join(app.getPath('userData'), 'glide-history.json')
+    return join(app.getPath('userData'), 'flit-history.json')
   }
 
   load(): void {

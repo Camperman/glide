@@ -4,11 +4,11 @@ import { join } from 'path'
 import type { AppRailLayout, BookmarkNode, Prefs, Shortcut } from '../shared/types'
 
 // Settings default to the per-user userData dir. On the author's Mac, two macOS
-// users share one config via /Users/Shared/Glide — that mode stays available but
+// users share one config via /Users/Shared/Flit — that mode stays available but
 // is now OPT-IN: it's used only when the shared file already exists (his machine)
-// or GLIDE_SHARED_DIR is set. Fresh installs (friends' Macs) never create a
+// or FLIT_SHARED_DIR is set. Fresh installs (friends' Macs) never create a
 // world-writable shared dir. Logins/sessions are always per-user regardless.
-const SHARED_DIR = process.env.GLIDE_SHARED_DIR || '/Users/Shared/Glide'
+const SHARED_DIR = process.env.FLIT_SHARED_DIR || '/Users/Shared/Flit'
 
 /** One restorable tab (views are rebuilt lazily on first activation). */
 export interface PersistedTab {
@@ -67,22 +67,45 @@ export function defaultState(): PersistedState {
   return { version: 1, accounts: DEFAULT_ACCOUNTS.map((a) => ({ ...a })), firstRun: true }
 }
 
+/** One-time migration: the shared config originally lived at
+ *  /Users/Shared/Glide/glide-state.json (pre-rebrand). Copy it across so the
+ *  author's two-macOS-user setup survives the rename. */
+function migrateLegacyShared(): void {
+  if (process.env.FLIT_SHARED_DIR) return // tests use throwaway dirs
+  try {
+    const oldFile = join('/Users/Shared/Glide', 'glide-state.json')
+    const newFile = join(SHARED_DIR, 'flit-state.json')
+    if (existsSync(oldFile) && !existsSync(newFile)) {
+      ensureSharedDir()
+      writeFileSync(newFile, readFileSync(oldFile, 'utf8'), 'utf8')
+      try {
+        chmodSync(newFile, 0o666)
+      } catch {
+        // ignore
+      }
+    }
+  } catch {
+    // best-effort
+  }
+}
+
 /** Shared mode is opt-in: explicit env, or the shared file already exists. */
 let sharedModeCache: boolean | undefined
 function sharedMode(): boolean {
   if (sharedModeCache === undefined) {
+    migrateLegacyShared()
     sharedModeCache =
-      Boolean(process.env.GLIDE_SHARED_DIR) || existsSync(join(SHARED_DIR, 'glide-state.json'))
+      Boolean(process.env.FLIT_SHARED_DIR) || existsSync(join(SHARED_DIR, 'flit-state.json'))
   }
   return sharedModeCache
 }
 
 function statePath(): string {
-  return sharedMode() ? join(SHARED_DIR, 'glide-state.json') : perUserStatePath()
+  return sharedMode() ? join(SHARED_DIR, 'flit-state.json') : perUserStatePath()
 }
 
 function perUserStatePath(): string {
-  return join(app.getPath('userData'), 'glide-state.json')
+  return join(app.getPath('userData'), 'flit-state.json')
 }
 
 /** Create the shared dir world-writable so every macOS user can read/write it. */

@@ -32,7 +32,7 @@ export class DownloadManager {
   private saveTimer: NodeJS.Timeout | undefined
 
   private path(): string {
-    return join(app.getPath('userData'), 'glide-downloads.json')
+    return join(app.getPath('userData'), 'flit-downloads.json')
   }
 
   /** Restore finished downloads from the last run (per-user file). */

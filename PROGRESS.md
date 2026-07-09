@@ -1,4 +1,4 @@
-# Glide — Progress
+# Flit (formerly Glide) — Progress
 
 Loop-maintained status of the phased build (see REQUIREMENTS.md §5).
 Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
@@ -39,6 +39,7 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 31 | Per-account accent theming (pref, default on) | ✅ |
 | 32 | Persistent downloads history | ✅ |
 | 33 | Pin tab to apps + account/app cycling shortcuts | ✅ |
+| 34 | Rename: Glide → Flit (app, bundle ID, repo, data migration) | ✅ |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining polish explicitly requested
@@ -79,6 +80,22 @@ method instead** — on Google's "Something went wrong / Make sure Bluetooth is
 on" screen, click **Try another way** → "Tap Yes on your phone" (internet-based,
 not BLE) / authenticator code / password / backup code. Sessions persist, so
 this is one-time per account. Revisit only if we ever add Developer-ID signing.
+
+### Phase 34 notes — rename Glide → Flit (2026-07-08)
+"Glide" collided with two existing browsers (a Mac App Store app and the
+Firefox-based glide-browser.app); **Flit** vetted clean (no in-category
+products; the Python packaging tool and a few distant small companies are the
+only same-name software). Scope: display name, `productName`, **bundle ID
+com.bcamp.glide → com.bcamp.flit** (user was sole install; macOS permissions
+re-prompt once), package name, window titles, `window.glide` API →
+`window.flit`, env vars `GLIDE_*` → `FLIT_*`, data files `glide-*.json` →
+`flit-*.json`, `/Users/Shared/Glide` → `/Users/Shared/Flit`, repo
+Camperman/glide → Camperman/flit. **Migrations** (one-time, best-effort):
+userData dir rename + state-file renames in `index.ts`; shared-config copy in
+`persistence.ts`. Kept: keychain profile name `glide`
+(`APPLE_KEYCHAIN_PROFILE=glide` — it's a stored-credential label, invisible).
+Old Glide releases (≤0.6.0) don't auto-update across the rename — fresh DMG
+install once. Icon artwork still the original; redesign pending.
 
 ### Phase 33 notes — tab pinning + cycling (2026-07-08)
 - **Right-click a tab → Pin to Apps**: creates a shortcut from the tab's page

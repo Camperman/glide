@@ -1,4 +1,4 @@
-# Glide
+# Flit
 
 A macOS desktop app for running multiple Google accounts side by side — each in
 its own fully isolated, permanently-signed-in session — switching between them
@@ -25,7 +25,7 @@ so accounts never bleed into each other and never log each other out.
 ## Install (macOS, Apple Silicon)
 
 Download the latest DMG from [Releases](../../releases), open it, and drag
-Glide to Applications.
+Flit to Applications.
 
 ## Build from source
 
@@ -43,7 +43,7 @@ keychain and these environment variables for notarization:
 
 ```sh
 # One-time: store notarization credentials in the keychain profile "glide"
-# (an app-specific password from appleid.apple.com; Team ID from the cert name).
+# (the profile name predates the app's rename to Flit; package.json expects it).
 xcrun notarytool store-credentials glide --apple-id "you@example.com" --team-id "XXXXXXXXXX"
 ```
 
@@ -51,8 +51,8 @@ After `npm run dist`, optionally notarize + staple the DMG container itself
 (the app inside is already notarized; this just makes the DMG validate too):
 
 ```sh
-xcrun notarytool submit dist/Glide-*.dmg --keychain-profile glide --wait
-xcrun stapler staple dist/Glide-*.dmg
+xcrun notarytool submit dist/Flit-*.dmg --keychain-profile glide --wait
+xcrun stapler staple dist/Flit-*.dmg
 ```
 
 ## Notes & limitations

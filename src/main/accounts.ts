@@ -153,7 +153,7 @@ interface WindowState {
 
 // Sentinel logged by the injected Notification wrapper when the user clicks a
 // notification; main hears it via 'console-message' and switches to the account.
-const NOTIFICATION_CLICK_SENTINEL = '__GLIDE_NOTIFICATION_CLICK__'
+const NOTIFICATION_CLICK_SENTINEL = '__FLIT_NOTIFICATION_CLICK__'
 
 // Wraps window.Notification in the page so clicks on Google's HTML5
 // notifications are observable from main. Read-only + one-way (console.log);
@@ -161,8 +161,8 @@ const NOTIFICATION_CLICK_SENTINEL = '__GLIDE_NOTIFICATION_CLICK__'
 // Note: notifications fired from service workers bypass window.Notification
 // and are not caught — Gmail/Calendar/Meet fire theirs from the page.
 const NOTIFICATION_HOOK_SCRIPT = `(() => {
-  if (window.__glideNotifHook) return
-  window.__glideNotifHook = true
+  if (window.__flitNotifHook) return
+  window.__flitNotifHook = true
   const Native = window.Notification
   if (!Native) return
   const Wrapped = function (title, options) {
@@ -251,7 +251,7 @@ export function isExternalProtocol(url: string): boolean {
 }
 
 // Common macOS browsers, checked against their .app bundle names. Ordered by
-// how likely we are to want them; Glide filters this to what's installed.
+// how likely we are to want them; Flit filters this to what's installed.
 const KNOWN_BROWSERS: ReadonlyArray<{ label: string; app: string }> = [
   { label: 'Safari', app: 'Safari' },
   { label: 'Google Chrome', app: 'Google Chrome' },
@@ -377,7 +377,7 @@ export class AccountManager implements ExtensionTabDelegate {
 
     // Enable screen sharing (Google Meet getDisplayMedia). On macOS 15+ the
     // native system picker is used; otherwise we fall back to sharing the
-    // primary screen. Requires the OS "Screen Recording" permission for Glide.
+    // primary screen. Requires the OS "Screen Recording" permission for Flit.
     ses.setDisplayMediaRequestHandler(
       (_request, callback) => {
         desktopCapturer
@@ -993,7 +993,7 @@ export class AccountManager implements ExtensionTabDelegate {
     if (!ws.win.isDestroyed()) ws.win.webContents.send('find:close')
   }
 
-  /** Open a link sent to Glide by macOS (default-browser open-url). Lands as a
+  /** Open a link sent to Flit by macOS (default-browser open-url). Lands as a
    *  foreground tab in the focused window's active account. */
   openUrlInActiveAccount(url: string): void {
     if (!/^https?:\/\//i.test(url)) return

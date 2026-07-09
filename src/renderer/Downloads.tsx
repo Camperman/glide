@@ -72,7 +72,7 @@ export function Downloads({ downloads, open, onToggle, onClose }: DownloadsProps
           <div className="downloads__head">
             <span>Downloads</span>
             <div>
-              <button type="button" onClick={() => void window.glide.clearDownloads()}>
+              <button type="button" onClick={() => void window.flit.clearDownloads()}>
                 Clear
               </button>
               <button type="button" onClick={onClose}>
@@ -88,7 +88,7 @@ export function Downloads({ downloads, open, onToggle, onClose }: DownloadsProps
                   className="downloads__file"
                   disabled={d.state !== 'completed'}
                   title={d.state === 'completed' ? 'Open' : undefined}
-                  onClick={() => void window.glide.openDownload(d.id)}
+                  onClick={() => void window.flit.openDownload(d.id)}
                 >
                   <span className="downloads__name">{d.filename}</span>
                   <span className="downloads__status">{statusLine(d)}</span>
@@ -111,7 +111,7 @@ export function Downloads({ downloads, open, onToggle, onClose }: DownloadsProps
                     type="button"
                     className="downloads__action"
                     title="Show in Finder"
-                    onClick={() => void window.glide.showDownload(d.id)}
+                    onClick={() => void window.flit.showDownload(d.id)}
                   >
                     🔍
                   </button>
@@ -121,7 +121,7 @@ export function Downloads({ downloads, open, onToggle, onClose }: DownloadsProps
                     type="button"
                     className="downloads__action"
                     title="Cancel"
-                    onClick={() => void window.glide.cancelDownload(d.id)}
+                    onClick={() => void window.flit.cancelDownload(d.id)}
                   >
                     ✕
                   </button>
