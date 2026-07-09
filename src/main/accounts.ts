@@ -116,17 +116,20 @@ const SAFE_EXTERNAL_SCHEMES = new Set([
   'facetime',
   'facetime-audio',
   'zoommtg',
+  'zoomus', // Zoom Workplace registers both; newer launch pages use this one
   'msteams',
   'slack',
   'spotify'
 ])
 
+export function isSafeExternalScheme(url: string): boolean {
+  const match = /^([a-z][a-z0-9+.-]*):/i.exec(url)
+  return match !== null && SAFE_EXTERNAL_SCHEMES.has(match[1].toLowerCase())
+}
+
 /** Open an app-protocol link via the OS only if its scheme is allowlisted. */
 export function openExternalSafe(url: string): void {
-  const match = /^([a-z][a-z0-9+.-]*):/i.exec(url)
-  if (match && SAFE_EXTERNAL_SCHEMES.has(match[1].toLowerCase())) {
-    void shell.openExternal(url).catch(() => {})
-  }
+  if (isSafeExternalScheme(url)) void shell.openExternal(url).catch(() => {})
 }
 
 export interface AccountConfig {
@@ -442,6 +445,15 @@ export class AccountManager implements ExtensionTabDelegate {
       return stored === undefined ? 'ask' : stored
     }
     ses.setPermissionRequestHandler((wc, permission, callback, details) => {
+      // App-protocol launches fired from subframes (Zoom's launcher fires
+      // zoommtg:// from a hidden iframe) never hit will-navigate — Chromium
+      // routes them here as an 'openExternal' ask. Grant the same scheme
+      // allowlist as the navigation path; Chromium then launches the app.
+      if (permission === 'openExternal') {
+        const ext = (details as { externalURL?: string }).externalURL ?? ''
+        callback(isSafeExternalScheme(ext))
+        return
+      }
       const url = details.requestingUrl ?? wc?.getURL() ?? ''
       const state = settled(permission, url)
       if (state !== 'ask') {
@@ -913,13 +925,9 @@ export class AccountManager implements ExtensionTabDelegate {
       })
     })
 
-    // In-page navigations to app protocols (Zoom's "launch meeting", mailto, …).
-    wc.on('will-navigate', (e, url) => {
-      if (isExternalProtocol(url)) {
-        e.preventDefault()
-        openExternalSafe(url) // allowlisted schemes only
-      }
-    })
+    // Main-frame navigations to app protocols (mailto, zoommtg, …) are handled
+    // by the global web-contents-created will-navigate hook in index.ts —
+    // don't duplicate it here or allowlisted links launch twice.
 
     view.setVisible(false)
     ws.win.contentView.addChildView(view)

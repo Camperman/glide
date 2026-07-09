@@ -394,6 +394,25 @@ receive a mail there, click the banner → Glide focuses and switches to B.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Fix — ✅ Zoom "Join from Zoom Workplace app" button dead (3 bugs).** Diagnosed
+  by instrumenting every navigation/permission/launch path in a live run:
+  (1) **Hidden-iframe protocol launches were denied.** Zoom's launcher fires
+  `zoommtg://` from a hidden iframe (so the page can show its "Did not open?"
+  tooltip); iframe navigations never hit `will-navigate` — Chromium routes them
+  to the session permission handler as an **`openExternal`** ask, which the
+  deny-by-default handler rejected. Fix: grant `openExternal` iff
+  `details.externalURL` passes the same `SAFE_EXTERNAL_SCHEMES` allowlist
+  (Chromium then launches the app itself). (2) **`zoomus://` added to the
+  allowlist** — Zoom Workplace registers both schemes; newer launch pages use it.
+  (3) **Double-launch bug**: main-frame protocol links fired
+  `shell.openExternal` twice (per-view `will-navigate` + the global
+  `web-contents-created` hook in index.ts both handled it — a mailto: link
+  opened two compose windows). Removed the per-view duplicate; the global hook
+  covers all webContents including popups. Verified end-to-end: main-frame
+  zoommtg/zoomus each launch exactly once; iframe with a non-allowlisted scheme
+  stays dead; **iframe `mailto:` through the real permission handler launched
+  Mail** (the exact Zoom code path). guard + build + smoke (×2) + isolation
+  pass. Manual check: click "Join from Zoom Workplace app" on a real meeting.
 - **Fix — ✅ Gmail sending ("Message could not be sent. Check your network").**
   Gmail sends mail via the **Background Sync API** (Send registers a sync so the
   message goes out reliably). The Phase 35 deny-by-default permission hardening
