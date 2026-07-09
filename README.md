@@ -9,7 +9,7 @@ other site you browse).
 Flit renders pages with Chromium (via Electron), so any site works exactly as
 it does in Chrome.
 
-![Flit browsing Wikipedia with three accounts in the sidebar](docs/assets/hero.png)
+![Flit browsing Wikipedia — signed-in accounts with unread badges, pinned app icons, tabs, and a bookmarks bar](docs/assets/hero.png)
 
 **[Download for macOS (Apple Silicon)](https://github.com/Camperman/flit/releases/latest)** ·
 [Website](https://camperman.github.io/flit/) ·
