@@ -1,4 +1,4 @@
-import { BrowserWindow, WebContentsView, ipcMain } from 'electron'
+import { BrowserWindow, WebContentsView, ipcMain, net } from 'electron'
 import { join } from 'path'
 import type { AccountManager } from './accounts'
 import type { HistoryManager } from './history'
@@ -20,6 +20,8 @@ interface OmniboxWindow {
   suggestions: Suggestion[]
   selected: number
   visible: boolean
+  /** Monotonic per-keystroke token; stale async computes are discarded. */
+  token: number
 }
 
 const ROW_HEIGHT = 34
@@ -30,6 +32,39 @@ const SEARCH_LABEL: Record<string, string> = {
   google: 'Google',
   duckduckgo: 'DuckDuckGo',
   bing: 'Bing'
+}
+
+// All three speak the OpenSearch suggestion format: [query, [phrases…]].
+const SUGGEST_URLS: Record<string, (q: string) => string> = {
+  google: (q) => `https://suggestqueries.google.com/complete/search?client=firefox&q=${q}`,
+  duckduckgo: (q) => `https://duckduckgo.com/ac/?type=list&q=${q}`,
+  bing: (q) => `https://api.bing.com/osjson.aspx?query=${q}`
+}
+
+function looksLikeUrl(text: string): boolean {
+  return (
+    !/\s/.test(text) &&
+    (/^[a-z][a-z0-9+.-]*:\/\//i.test(text) || /^[^\s/.]+\.[^\s/.]+/.test(text))
+  )
+}
+
+/** Live query completions from the selected engine; empty on any failure. */
+async function fetchCompletions(engine: string, text: string): Promise<string[]> {
+  const build = SUGGEST_URLS[engine]
+  if (!build) return []
+  try {
+    const res = await net.fetch(build(encodeURIComponent(text)), {
+      signal: AbortSignal.timeout(800)
+    })
+    if (!res.ok) return []
+    const data = (await res.json()) as unknown
+    if (Array.isArray(data) && Array.isArray(data[1])) {
+      return (data[1] as unknown[]).filter((s): s is string => typeof s === 'string')
+    }
+  } catch {
+    // offline / timeout / shape change — suggestions are best-effort
+  }
+  return []
 }
 
 function flattenBookmarks(nodes: BookmarkNode[], out: Array<{ title: string; url: string }>): void {
@@ -82,7 +117,14 @@ export class OmniboxManager {
     const ready = url
       ? view.webContents.loadURL(`${url}/suggestions.html`)
       : view.webContents.loadFile(join(__dirname, '../renderer/suggestions.html'))
-    ow = { view, ready: ready.catch(() => {}), suggestions: [], selected: -1, visible: false }
+    ow = {
+      view,
+      ready: ready.catch(() => {}),
+      suggestions: [],
+      selected: -1,
+      visible: false,
+      token: 0
+    }
     this.windows.set(win.id, ow)
     win.on('closed', () => this.windows.delete(win.id))
     win.on('resize', () => this.hide(win))
@@ -100,8 +142,10 @@ export class OmniboxManager {
       this.hide(win)
       return
     }
-    const suggestions = this.compute(win, trimmed)
     const ow = this.forWindow(win)
+    const token = ++ow.token
+    const suggestions = await this.compute(win, trimmed)
+    if (token !== ow.token) return // superseded by a newer keystroke
     ow.suggestions = suggestions
     ow.selected = -1
     if (suggestions.length === 0) {
@@ -151,13 +195,19 @@ export class OmniboxManager {
     ow.view.setVisible(false)
   }
 
-  private compute(win: BrowserWindow, text: string): Suggestion[] {
+  private async compute(win: BrowserWindow, text: string): Promise<Suggestion[]> {
     const accountId = this.accounts.getActiveId(win)
     if (!accountId) return []
     const out: Suggestion[] = []
     const seen = new Set<string>()
+    const engine = this.prefs.state().prefs.searchEngine
 
-    for (const entry of this.history.query(accountId, text, 4)) {
+    // Live engine completions fetch while we assemble the local rows.
+    const completionsPromise = looksLikeUrl(text)
+      ? Promise.resolve<string[]>([])
+      : fetchCompletions(engine, text)
+
+    for (const entry of this.history.query(accountId, text, 3)) {
       out.push({
         kind: 'history',
         title: entry.title || entry.url,
@@ -171,7 +221,7 @@ export class OmniboxManager {
     flattenBookmarks(this.accounts.getBookmarks(accountId), links)
     const needle = text.toLowerCase()
     for (const link of links) {
-      if (out.length >= 5) break
+      if (out.length >= 4) break
       if (seen.has(link.url)) continue
       if (link.title.toLowerCase().includes(needle) || link.url.toLowerCase().includes(needle)) {
         out.push({ kind: 'bookmark', title: link.title, url: link.url, fill: link.url })
@@ -179,14 +229,19 @@ export class OmniboxManager {
       }
     }
 
+    for (const phrase of await completionsPromise) {
+      if (out.length >= MAX_ROWS - 1) break
+      if (phrase.toLowerCase() === text.toLowerCase()) continue // escape row covers it
+      out.push({ kind: 'search', title: phrase, url: '', fill: phrase })
+    }
+
     // Always offer the search escape hatch last.
-    const engine = this.prefs.state().prefs.searchEngine
     out.push({
       kind: 'search',
       title: `Search ${SEARCH_LABEL[engine] ?? 'the web'} for “${text}”`,
       url: '',
       fill: text
     })
-    return out
+    return out.slice(0, MAX_ROWS)
   }
 }
