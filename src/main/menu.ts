@@ -12,6 +12,10 @@ export interface MenuHandlers {
   reopenTab: () => void
   nextTab: () => void
   prevTab: () => void
+  nextAccount: () => void
+  prevAccount: () => void
+  nextApp: () => void
+  prevApp: () => void
   focusAddress: () => void
   find: () => void
   bookmarkPage: () => void
@@ -224,7 +228,34 @@ export function buildAppMenu(handlers: MenuHandlers): void {
         }
       ]
     },
-    { label: 'Accounts', submenu: accountItems },
+    {
+      label: 'Accounts',
+      submenu: [
+        ...accountItems,
+        { type: 'separator' },
+        {
+          label: 'Next Account',
+          accelerator: 'Alt+Command+Down',
+          click: () => handlers.nextAccount()
+        },
+        {
+          label: 'Previous Account',
+          accelerator: 'Alt+Command+Up',
+          click: () => handlers.prevAccount()
+        },
+        { type: 'separator' },
+        {
+          label: 'Next App',
+          accelerator: 'Alt+Command+Right',
+          click: () => handlers.nextApp()
+        },
+        {
+          label: 'Previous App',
+          accelerator: 'Alt+Command+Left',
+          click: () => handlers.prevApp()
+        }
+      ]
+    },
     {
       label: 'Window',
       submenu: [

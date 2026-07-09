@@ -95,6 +95,22 @@ function installMenu(): void {
       const win = focused()
       if (win) accounts?.cycleTab(win, -1)
     },
+    nextAccount: () => {
+      const win = focused()
+      if (win) accounts?.cycleAccount(win, 1)
+    },
+    prevAccount: () => {
+      const win = focused()
+      if (win) accounts?.cycleAccount(win, -1)
+    },
+    nextApp: () => {
+      const win = focused()
+      if (win) accounts?.cycleApp(win, 1)
+    },
+    prevApp: () => {
+      const win = focused()
+      if (win) accounts?.cycleApp(win, -1)
+    },
     focusAddress: () => focused()?.webContents.send('menu:focus-address'),
     find: () => {
       const win = focused()

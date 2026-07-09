@@ -38,6 +38,7 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 30 | Command palette (Cmd-K quick switcher) | ✅ |
 | 31 | Per-account accent theming (pref, default on) | ✅ |
 | 32 | Persistent downloads history | ✅ |
+| 33 | Pin tab to apps + account/app cycling shortcuts | ✅ |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining polish explicitly requested
@@ -78,6 +79,16 @@ method instead** — on Google's "Something went wrong / Make sure Bluetooth is
 on" screen, click **Try another way** → "Tap Yes on your phone" (internet-based,
 not BLE) / authenticator code / password / backup code. Sessions persist, so
 this is one-time per account. Revisit only if we ever add Developer-ID signing.
+
+### Phase 33 notes — tab pinning + cycling (2026-07-08)
+- **Right-click a tab → Pin to Apps**: creates a shortcut from the tab's page
+  (title/URL/favicon) and merges the tab into the rail — it leaves the strip
+  and becomes the app's already-loaded tab. Also: Duplicate Tab, Close Tab.
+  Manual check: pin a tab, confirm it appears in the rail and leaves the strip.
+- **Cycling accelerators** (Accounts menu): **⌥⌘↓/↑** next/previous account,
+  **⌥⌘→/←** next/previous pinned app (from a loose tab, → goes to the first
+  app). Cmd-1…9 direct account jumps existed since Phase 7. Cycling verified
+  by automated test.
 
 ### Phase 31–32 notes — account accent + persistent downloads (2026-07-08)
 - **Accent follows active account** (pref, default on, Preferences → General):

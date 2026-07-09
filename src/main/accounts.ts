@@ -1560,6 +1560,80 @@ export class AccountManager implements ExtensionTabDelegate {
     ]).popup({ window: win })
   }
 
+  /** Right-click on a tab in the strip. */
+  popupTabMenu(win: BrowserWindow, accountId: string, tabId: string): void {
+    const ws = this.wsFor(win)
+    const wa = ws?.perAccount.get(accountId)
+    const tab = wa?.tabs.find((t) => t.id === tabId)
+    if (!ws || !wa || !tab) return
+    Menu.buildFromTemplate([
+      {
+        label: 'Pin to Apps',
+        enabled: /^https?:\/\//i.test(tab.currentUrl),
+        click: () => this.pinTabAsApp(win, accountId, tabId)
+      },
+      {
+        label: 'Duplicate Tab',
+        click: () => {
+          const dup = this.openTab(ws, accountId, tab.currentUrl)
+          wa.activeTabId = dup.id
+          this.afterTabChange(ws, accountId)
+        }
+      },
+      { type: 'separator' },
+      { label: 'Close Tab', click: () => this.closeTab(win, accountId, tabId) }
+    ]).popup({ window: win })
+  }
+
+  /** Turn a loose tab into a pinned app: creates a shortcut from the tab's
+   *  page and merges the tab into the rail (it leaves the tab strip and
+   *  becomes the app's tab, already loaded). */
+  private pinTabAsApp(win: BrowserWindow, accountId: string, tabId: string): void {
+    const ws = this.wsFor(win)
+    const meta = this.accounts.get(accountId)
+    const wa = ws?.perAccount.get(accountId)
+    const tab = wa?.tabs.find((t) => t.id === tabId)
+    if (!ws || !meta || !wa || !tab || !/^https?:\/\//i.test(tab.currentUrl)) return
+    const shortcut: Shortcut = {
+      id: randomUUID(),
+      label: (tab.title || hostOf(tab.currentUrl)).slice(0, 40),
+      url: tab.currentUrl,
+      favicon: tab.favicon
+    }
+    meta.shortcuts.push(shortcut)
+    tab.originShortcutId = shortcut.id
+    this.broadcastShortcuts(accountId)
+    this.broadcastApps(accountId)
+    this.emitTabs(ws, accountId)
+    this.onState?.()
+  }
+
+  // ---- account/app cycling (menu accelerators) ---------------------------
+
+  /** Cmd-Opt-Down/Up: next/previous account in sidebar order. */
+  cycleAccount(win: BrowserWindow, delta: 1 | -1): void {
+    const ws = this.wsFor(win)
+    if (!ws || this.order.length < 2) return
+    const index = Math.max(0, this.order.indexOf(ws.activeAccountId ?? ''))
+    const next = this.order[(index + delta + this.order.length) % this.order.length]
+    this.setActive(win, next)
+  }
+
+  /** Cmd-Opt-Right/Left: next/previous pinned app in the active account. */
+  cycleApp(win: BrowserWindow, delta: 1 | -1): void {
+    const ws = this.wsFor(win)
+    if (!ws?.activeAccountId) return
+    const meta = this.accounts.get(ws.activeAccountId)
+    if (!meta || meta.shortcuts.length === 0) return
+    const wa = ws.perAccount.get(ws.activeAccountId)
+    const activeTab = wa?.tabs.find((t) => t.id === wa.activeTabId)
+    const index = meta.shortcuts.findIndex((s) => s.id === activeTab?.originShortcutId)
+    const count = meta.shortcuts.length
+    // From a loose (non-app) tab, jump to the first/last app.
+    const nextIndex = index === -1 ? (delta === 1 ? 0 : count - 1) : (index + delta + count) % count
+    this.openShortcut(win, ws.activeAccountId, meta.shortcuts[nextIndex].id)
+  }
+
   popupShortcutMenu(win: BrowserWindow, accountId: string, shortcutId: string): void {
     const ws = this.wsFor(win)
     const openTab = ws?.perAccount.get(accountId)?.tabs.find((t) => t.originShortcutId === shortcutId)

@@ -113,6 +113,10 @@ export function registerIpc(
     const win = winOf(e)
     if (win) accounts.openBookmarksOverflow(win, accountId, ids)
   })
+  ipcMain.handle('menu:tab', (e, accountId: string, tabId: string) => {
+    const win = winOf(e)
+    if (win) accounts.popupTabMenu(win, accountId, tabId)
+  })
   ipcMain.handle('menu:bookmark', (e, accountId: string, bookmarkId: string) => {
     const win = winOf(e)
     if (win) accounts.popupBookmarkMenu(win, accountId, bookmarkId)

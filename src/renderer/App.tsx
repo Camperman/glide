@@ -345,6 +345,9 @@ export function App(): JSX.Element {
           onToggleMute={(tabId) => {
             if (activeId) void window.glide.toggleTabMute(activeId, tabId)
           }}
+          onContextMenu={(tabId) => {
+            if (activeId) void window.glide.showTabMenu(activeId, tabId)
+          }}
           onNew={() => {
             if (activeId) void window.glide.newTab(activeId)
           }}

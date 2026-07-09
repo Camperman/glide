@@ -8,6 +8,7 @@ interface TabStripProps {
   onClose: (tabId: string) => void
   onReorder: (tabIds: string[]) => void
   onToggleMute: (tabId: string) => void
+  onContextMenu: (tabId: string) => void
   onNew: () => void
 }
 
@@ -22,6 +23,7 @@ export function TabStrip({
   onClose,
   onReorder,
   onToggleMute,
+  onContextMenu,
   onNew
 }: TabStripProps): JSX.Element {
   const dragId = useRef<string | null>(null)
@@ -63,6 +65,10 @@ export function TabStrip({
           title={tab.title}
           draggable
           onClick={() => onActivate(tab.id)}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            onContextMenu(tab.id)
+          }}
           onDragStart={() => handleDragStart(tab.id)}
           onDragOver={(e) => handleDragOver(e, tab.id)}
           onDragEnd={handleDragEnd}
