@@ -16,6 +16,7 @@ import { existsSync } from 'fs'
 import { homedir } from 'os'
 import type {
   AccountPatch,
+  AccountPreset,
   AccountSummary,
   AppInfo,
   AppRailLayout,
@@ -31,6 +32,7 @@ import type {
   ShortcutPatch,
   TabInfo
 } from '../shared/types'
+import { PRESET_HOMES } from '../shared/types'
 import type { MenuItemConstructorOptions } from 'electron'
 import type { PersistedAccount, PersistedTab } from './persistence'
 import type { DownloadManager } from './downloads'
@@ -66,6 +68,24 @@ function defaultShortcuts(): Shortcut[] {
     { label: 'Contacts', url: 'https://contacts.google.com' },
     { label: 'Passwords', url: 'https://passwords.google.com' }
   ].map((s) => ({ id: randomUUID(), ...s }))
+}
+
+function microsoftShortcuts(): Shortcut[] {
+  return [
+    { label: 'Mail', url: 'https://outlook.live.com/mail/' },
+    { label: 'Calendar', url: 'https://outlook.live.com/calendar/' },
+    { label: 'OneDrive', url: 'https://onedrive.live.com' },
+    { label: 'Microsoft 365', url: 'https://www.office.com' },
+    { label: 'Teams', url: 'https://teams.microsoft.com' },
+    { label: 'OneNote', url: 'https://www.onenote.com' }
+  ].map((s) => ({ id: randomUUID(), ...s }))
+}
+
+/** Apps a new account starts with, by preset. */
+function presetShortcuts(preset: AccountPreset): Shortcut[] {
+  if (preset === 'microsoft') return microsoftShortcuts()
+  if (preset === 'none') return []
+  return defaultShortcuts()
 }
 
 const GRANTED_PERMISSIONS = new Set([
@@ -495,8 +515,10 @@ export class AccountManager implements ExtensionTabDelegate {
       color: config.color,
       homeUrl: config.homeUrl,
       lastUrl: config.lastUrl ?? config.homeUrl,
-      shortcuts:
-        config.shortcuts && config.shortcuts.length > 0 ? config.shortcuts : defaultShortcuts(),
+      // undefined = pre-Phase-9 state or caller didn't choose → seed Google
+      // defaults. An explicit [] (the "start empty" preset, or a user who
+      // removed every app) is respected as-is.
+      shortcuts: config.shortcuts ?? defaultShortcuts(),
       bookmarks: config.bookmarks ?? [],
       avatarUrl: config.avatarUrl,
       muted: config.muted,
@@ -1329,11 +1351,13 @@ export class AccountManager implements ExtensionTabDelegate {
 
   addAccount(input: NewAccountInput): string {
     const id = randomUUID()
+    const preset = input.preset ?? 'google'
     this.addMeta({
       id,
       label: input.label.trim() || 'Account',
       color: input.color || '#888888',
-      homeUrl: normalizeUrl(input.homeUrl) || 'https://mail.google.com'
+      homeUrl: normalizeUrl(input.homeUrl) || PRESET_HOMES[preset],
+      shortcuts: presetShortcuts(preset)
     })
     // Make it available (and active) in every open window.
     for (const ws of this.allWindows()) {
@@ -1788,6 +1812,45 @@ export class AccountManager implements ExtensionTabDelegate {
     if (next.length !== this.order.length) return
     this.order = next
     this.broadcastUpdated()
+    this.onState?.()
+  }
+
+  /**
+   * Re-seed an account's apps + home page from a preset. Used by the
+   * first-run welcome (the starter account is created before the user picks),
+   * so it replaces the shortcut list wholesale — only safe while the account
+   * has no user customization worth keeping.
+   */
+  applyPreset(id: string, preset: AccountPreset): void {
+    const meta = this.accounts.get(id)
+    if (!meta) return
+    meta.shortcuts = presetShortcuts(preset)
+    meta.homeUrl = PRESET_HOMES[preset]
+    meta.lastUrl = meta.homeUrl
+    for (const ws of this.allWindows()) {
+      const wa = ws.perAccount.get(id)
+      if (!wa) continue
+      // The old shortcut ids are gone; unlink any tab that pointed at them
+      // (it becomes a normal strip tab instead of an invisible orphan).
+      for (const t of wa.tabs) {
+        if (t.originShortcutId && !meta.shortcuts.some((s) => s.id === t.originShortcutId)) {
+          t.originShortcutId = undefined
+        }
+      }
+      // Point the account's visible tab at the new home page and re-link it
+      // to the matching new shortcut (same host-match rule as ensureLoaded).
+      const tab = wa.tabs.find((t) => t.id === wa.activeTabId) ?? wa.tabs[0]
+      if (!tab) continue
+      tab.originShortcutId = meta.shortcuts.find(
+        (s) => hostOf(s.url) === hostOf(meta.homeUrl)
+      )?.id
+      tab.currentUrl = meta.homeUrl
+      if (tab.view) void tab.view.webContents.loadURL(meta.homeUrl)
+      this.emitTabs(ws, id)
+      if (ws.activeAccountId === id) this.emitNav(ws)
+    }
+    this.broadcastShortcuts(id)
+    this.broadcastApps(id)
     this.onState?.()
   }
 

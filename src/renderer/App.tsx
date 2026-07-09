@@ -480,8 +480,11 @@ export function App(): JSX.Element {
       {welcomeOpen && accounts[0] && (
         <WelcomeDialog
           initialLabel={accounts[0].label}
-          onDone={(label, color) => {
+          onDone={(label, color, preset) => {
             void window.flit.updateAccount(accounts[0].id, { label, color })
+            // Starter account is seeded with Google apps before the user
+            // picks; re-seed if they chose differently.
+            if (preset !== 'google') void window.flit.applyAccountPreset(accounts[0].id, preset)
             void window.flit.completeFirstRun()
             setWelcomeOpen(false)
           }}

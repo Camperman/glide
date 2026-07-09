@@ -394,6 +394,26 @@ receive a mail there, click the banner → Glide focuses and switches to B.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Polish — ✅ Account presets: Google / Microsoft / Start empty.** New
+  accounts (and the first-run starter) choose what they're seeded with. A
+  "Start with" segmented control in both the Welcome dialog and Add Account
+  dialog; `AccountPreset` + `PRESET_HOMES` in shared types. Google = the
+  existing 8 apps; Microsoft = Mail/Calendar (Outlook), OneDrive,
+  Microsoft 365, Teams, OneNote; empty = no apps. Picking a preset prefills
+  the Home URL (still editable). `addAccount` seeds by preset;
+  `applyPreset(id, preset)` (new `accounts:apply-preset` IPC) re-seeds the
+  first-run starter after the user picks — it replaces shortcuts wholesale,
+  unlinks orphaned app tabs (the starter tab carries the Mail shortcut's
+  `originShortcutId` via ensureLoaded's host-match), re-links the visible tab
+  to the new preset's matching shortcut, and loads the new home. Seeding rule
+  change in `addMeta`: `config.shortcuts ?? defaultShortcuts()` — an explicit
+  empty list is now respected (also fixes the old quirk where a user who
+  removed every app got re-seeded on relaunch); undefined (pre-Phase-9
+  states) still seeds Google defaults. Welcome lede broadened to match the
+  any-account positioning. Verified end-to-end: welcome → Microsoft → apps =
+  Outlook set + tab lands on outlook.live.com; addAccount preset 'none' → 0
+  apps; default → unchanged Google 8. guard + build + smoke (×2) + isolation
+  pass.
 - **Polish — ✅ App catalog in the Add App dialog (100 apps, 14 categories).**
   Shift-parity quick-add: the add-shortcut dialog (app rail +) now shows a
   searchable, categorized catalog (`src/renderer/appCatalog.ts` — Email,

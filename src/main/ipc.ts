@@ -8,6 +8,7 @@ import type { PrefsManager } from './prefs'
 import { checkForUpdatesInteractive } from './updater'
 import type {
   AccountPatch,
+  AccountPreset,
   AppRailLayout,
   NewAccountInput,
   Prefs,
@@ -175,6 +176,9 @@ export function registerIpc(
   )
   ipcMain.handle('accounts:remove', (_e, id: string) => accounts.removeAccount(id))
   ipcMain.handle('accounts:reorder', (_e, ids: string[]) => accounts.reorderAccounts(ids))
+  ipcMain.handle('accounts:apply-preset', (_e, id: string, preset: AccountPreset) =>
+    accounts.applyPreset(id, preset)
+  )
 
   ipcMain.handle('shortcuts:list', (_e, accountId: string) => accounts.shortcutsFor(accountId))
   ipcMain.handle('shortcuts:add', (_e, accountId: string, input: ShortcutInput) =>

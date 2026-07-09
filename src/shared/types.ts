@@ -12,10 +12,22 @@ export interface AccountSummary {
   ephemeral?: boolean
 }
 
+/** What a new account is seeded with (pinned apps + home page). */
+export type AccountPreset = 'google' | 'microsoft' | 'none'
+
+/** Default home page per preset (the dialog prefills this; still editable). */
+export const PRESET_HOMES: Record<AccountPreset, string> = {
+  google: 'https://mail.google.com',
+  microsoft: 'https://outlook.live.com/mail/',
+  none: 'https://www.google.com'
+}
+
 export interface NewAccountInput {
   label: string
   color: string
   homeUrl: string
+  /** App seeding: 'google' (default) | 'microsoft' | 'none' (start empty). */
+  preset?: AccountPreset
 }
 
 export interface AccountPatch {
@@ -211,6 +223,8 @@ export interface FlitApi {
   removeAccount(id: string): Promise<void>
   /** Reorder the account sidebar (drag-and-drop). */
   reorderAccounts(ids: string[]): Promise<void>
+  /** Re-seed an account's apps + home page from a preset (first-run welcome). */
+  applyAccountPreset(id: string, preset: AccountPreset): Promise<void>
   goBack(): Promise<void>
   goForward(): Promise<void>
   reload(): Promise<void>
