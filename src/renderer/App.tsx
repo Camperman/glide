@@ -10,6 +10,7 @@ import { ShortcutDialog, type ShortcutValues } from './ShortcutDialog'
 import { Downloads } from './Downloads'
 import { FindBar } from './FindBar'
 import { HistoryDialog } from './HistoryDialog'
+import { Palette } from './Palette'
 import { PreferencesDialog } from './PreferencesDialog'
 import { WelcomeDialog } from './WelcomeDialog'
 import type {
@@ -67,6 +68,7 @@ export function App(): JSX.Element {
   const [bookmarkDialog, setBookmarkDialog] = useState<BookmarkDialogState | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [welcomeOpen, setWelcomeOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   useEffect(() => {
     void window.glide.listAccounts().then(setAccounts)
@@ -92,6 +94,7 @@ export function App(): JSX.Element {
     const offOpenPrefs = window.glide.onOpenPreferences(() => setPrefsOpen(true))
     const offFindOpen = window.glide.onFindOpen(() => setFindOpen(true))
     const offHistory = window.glide.onOpenHistory(() => setHistoryOpen(true))
+    const offPalette = window.glide.onOpenPalette(() => setPaletteOpen(true))
     const offFindClose = window.glide.onFindClose(() => setFindOpen(false))
     const offTarget = window.glide.onTargetUrl(setTargetUrl)
     const offActive = window.glide.onActiveChanged(setActiveId)
@@ -161,6 +164,7 @@ export function App(): JSX.Element {
       offFindOpen()
       offFindClose()
       offHistory()
+      offPalette()
       offTarget()
       offEditBookmark()
       offEditAccount()
@@ -206,7 +210,8 @@ export function App(): JSX.Element {
           downloadsOpen ||
           prefsOpen ||
           historyOpen ||
-          welcomeOpen
+          welcomeOpen ||
+          paletteOpen
       )
     )
   }, [
@@ -217,7 +222,8 @@ export function App(): JSX.Element {
     downloadsOpen,
     prefsOpen,
     historyOpen,
-    welcomeOpen
+    welcomeOpen,
+    paletteOpen
   ])
 
   // Theme: main owns resolution (nativeTheme + appearance pref) and pushes the
@@ -437,6 +443,15 @@ export function App(): JSX.Element {
             setBookmarkDialog(null)
           }}
           onCancel={() => setBookmarkDialog(null)}
+        />
+      )}
+
+      {paletteOpen && (
+        <Palette
+          accounts={accounts.filter((a) => !a.ephemeral)}
+          activeId={activeId}
+          tabs={tabs}
+          onClose={() => setPaletteOpen(false)}
         />
       )}
 

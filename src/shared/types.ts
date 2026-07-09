@@ -290,6 +290,8 @@ export interface GlideApi {
   onFocusAddress(cb: () => void): () => void
   /** Cmd-Y pressed: open the history page. */
   onOpenHistory(cb: () => void): () => void
+  /** Cmd-K pressed: open the quick switcher. */
+  onOpenPalette(cb: () => void): () => void
   /** Recent history for an account (query '' = recent-first). */
   listHistory(accountId: string, query: string): Promise<HistoryItem[]>
   /** Clear all history for an account. */

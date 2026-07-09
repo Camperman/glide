@@ -105,6 +105,7 @@ function installMenu(): void {
       if (win) accounts?.bookmarkActivePage(win)
     },
     showHistory: () => focused()?.webContents.send('menu:history'),
+    openPalette: () => focused()?.webContents.send('menu:palette'),
     print: () => {
       const win = focused()
       if (win) accounts?.printActive(win)

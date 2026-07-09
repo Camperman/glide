@@ -193,6 +193,11 @@ const api: GlideApi = {
     ipcRenderer.on('menu:history', listener)
     return () => ipcRenderer.removeListener('menu:history', listener)
   },
+  onOpenPalette: (cb) => {
+    const listener = (): void => cb()
+    ipcRenderer.on('menu:palette', listener)
+    return () => ipcRenderer.removeListener('menu:palette', listener)
+  },
   listHistory: (accountId, query) => ipcRenderer.invoke('history:list', accountId, query),
   clearHistory: (accountId) => ipcRenderer.invoke('history:clear', accountId),
   omniboxInput: (text, rect) => ipcRenderer.invoke('omnibox:input', text, rect),

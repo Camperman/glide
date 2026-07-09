@@ -15,6 +15,7 @@ export interface MenuHandlers {
   focusAddress: () => void
   find: () => void
   bookmarkPage: () => void
+  openPalette: () => void
   showHistory: () => void
   print: () => void
   zoomIn: () => void
@@ -92,6 +93,11 @@ export function buildAppMenu(handlers: MenuHandlers): void {
           label: 'Open Location…',
           accelerator: 'CommandOrControl+L',
           click: () => handlers.focusAddress()
+        },
+        {
+          label: 'Quick Switcher…',
+          accelerator: 'CommandOrControl+K',
+          click: () => handlers.openPalette()
         },
         { type: 'separator' },
         {

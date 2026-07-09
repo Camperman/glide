@@ -34,6 +34,8 @@ Legend: ✅ done & verified · 🔧 in progress · ⬜ not started
 | 26 | Incognito sessions (Cmd-Shift-N, memory-only partition) | ✅ |
 | 27 | Crash auto-recovery + history page (Cmd-Y) | ✅ |
 | 28 | First-run onboarding (welcome flow, single starter account) | ✅ |
+| 29 | Omnibox live search suggestions | ✅ |
+| 30 | Command palette (Cmd-K quick switcher) | ✅ |
 
 ## Next up
 **First complete cut (Phases 0–7) is done.** Remaining polish explicitly requested
@@ -74,6 +76,16 @@ method instead** — on Google's "Something went wrong / Make sure Bluetooth is
 on" screen, click **Try another way** → "Tap Yes on your phone" (internet-based,
 not BLE) / authenticator code / password / backup code. Sessions persist, so
 this is one-time per account. Revisit only if we ever add Developer-ID signing.
+
+### Phase 29–30 notes — live suggestions + command palette (2026-07-08)
+- **Live search suggestions**: OpenSearch endpoints per engine (Google
+  `suggestqueries`, DDG `ac`, Bing `osjson`), 800 ms budget, best-effort;
+  merged after history/bookmarks, six rows max, escape hatch always last;
+  per-window token discards stale keystrokes. Verified live against Google.
+- **Cmd-K Quick Switcher**: fuzzy jump to any account, any account's app
+  ("Personal › Mail"), or an active-account tab; arrows/Enter/Esc/click;
+  incognito sessions excluded. Verified end-to-end (filter → Enter →
+  account switched).
 
 ### Phase 28 notes — first-run onboarding (2026-07-08)
 Fresh installs now seed ONE starter account ("Personal") instead of three
