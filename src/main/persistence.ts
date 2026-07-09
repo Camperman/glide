@@ -32,6 +32,8 @@ export interface PersistedAccount {
   muted?: boolean
   /** Open tabs at last quit (primary window), restored on launch. */
   tabs?: PersistedTab[]
+  /** Remembered site-permission answers (`${origin}|${permission}` → allow). */
+  sitePermissions?: Record<string, boolean>
 }
 
 export interface WindowBounds {

@@ -6,6 +6,7 @@ import {
   app,
   clipboard,
   desktopCapturer,
+  dialog,
   session,
   shell
 } from 'electron'
@@ -83,6 +84,14 @@ const GRANTED_PERMISSIONS = new Set([
 const SENSITIVE_PERMISSIONS = new Set(['media', 'clipboard-read'])
 const TRUSTED_MEDIA_SUFFIXES = ['.google.com', '.googleusercontent.com', '.youtube.com']
 
+function originOf(url: string): string | undefined {
+  try {
+    return new URL(url).origin
+  } catch {
+    return undefined
+  }
+}
+
 function isTrustedMediaOrigin(url: string): boolean {
   try {
     const host = new URL(url).hostname
@@ -128,6 +137,7 @@ export interface AccountConfig {
   tabs?: PersistedTab[]
   /** Incognito: memory-only partition, never persisted, no history. */
   ephemeral?: boolean
+  sitePermissions?: Record<string, boolean>
 }
 
 /** Shared, persisted metadata for an account (not window-specific). */
@@ -146,6 +156,8 @@ interface AccountMeta {
   savedTabs?: PersistedTab[]
   /** Incognito: memory-only partition, never persisted, no history. */
   ephemeral?: boolean
+  /** Remembered Allow/Deny answers for non-Google sites: `${origin}|${perm}`. */
+  sitePermissions?: Record<string, boolean>
 }
 
 /** One open browser tab within an account, in a specific window. `view` is
@@ -406,19 +418,34 @@ export class AccountManager implements ExtensionTabDelegate {
     // Consult live state on every request/check so toggling "Mute Notifications"
     // takes effect immediately — Chromium re-checks permission each time a page
     // tries to display a notification.
-    const allowed = (permission: string, requestingUrl: string): boolean => {
+    // Sensitive permissions on non-Google origins: prompt once, remember the
+    // answer per origin per account. The check handler is synchronous, so it
+    // reports only settled state (trusted or remembered); the actual ask
+    // happens in the async request handler.
+    const settled = (permission: string, requestingUrl: string): boolean | 'ask' => {
       if (permission === 'notifications' && this.accounts.get(config.id)?.muted) return false
-      if (SENSITIVE_PERMISSIONS.has(permission) && !isTrustedMediaOrigin(requestingUrl)) {
-        return false
-      }
-      return GRANTED_PERMISSIONS.has(permission)
+      if (!GRANTED_PERMISSIONS.has(permission)) return false
+      if (!SENSITIVE_PERMISSIONS.has(permission)) return true
+      if (isTrustedMediaOrigin(requestingUrl)) return true
+      const origin = originOf(requestingUrl)
+      if (!origin) return false
+      const stored = this.accounts.get(config.id)?.sitePermissions?.[`${origin}|${permission}`]
+      return stored === undefined ? 'ask' : stored
     }
-    ses.setPermissionRequestHandler((wc, permission, callback, details) =>
-      callback(allowed(permission, details.requestingUrl ?? wc?.getURL() ?? ''))
-    )
-    ses.setPermissionCheckHandler((_wc, permission, requestingOrigin) =>
-      allowed(permission, requestingOrigin)
-    )
+    ses.setPermissionRequestHandler((wc, permission, callback, details) => {
+      const url = details.requestingUrl ?? wc?.getURL() ?? ''
+      const state = settled(permission, url)
+      if (state !== 'ask') {
+        callback(state)
+        return
+      }
+      const mediaTypes = 'mediaTypes' in details ? [...(details.mediaTypes ?? [])] : undefined
+      void this.promptSitePermission(config.id, wc, permission, url, { mediaTypes }).then(callback)
+    })
+    ses.setPermissionCheckHandler((_wc, permission, requestingOrigin) => {
+      const state = settled(permission, requestingOrigin)
+      return state === true // 'ask' reads as not-yet-granted
+    })
 
     // Enable screen sharing (Google Meet getDisplayMedia). On macOS 15+ the
     // native system picker is used; otherwise we fall back to sharing the
@@ -445,11 +472,69 @@ export class AccountManager implements ExtensionTabDelegate {
       avatarUrl: config.avatarUrl,
       muted: config.muted,
       savedTabs: config.tabs,
-      ephemeral: config.ephemeral
+      ephemeral: config.ephemeral,
+      sitePermissions: config.sitePermissions
     }
     this.accounts.set(meta.id, meta)
     if (!this.order.includes(meta.id)) this.order.push(meta.id)
     return meta
+  }
+
+  /** In-flight prompts, so simultaneous requests don't stack dialogs. */
+  private readonly pendingPermissionPrompts = new Map<string, Promise<boolean>>()
+
+  /** Chrome-style ask for a sensitive permission on a non-Google origin;
+   *  the answer is remembered per origin per account. */
+  private promptSitePermission(
+    accountId: string,
+    wc: WebContents | null,
+    permission: string,
+    requestingUrl: string,
+    details: { mediaTypes?: string[] }
+  ): Promise<boolean> {
+    const origin = originOf(requestingUrl)
+    const meta = this.accounts.get(accountId)
+    if (!origin || !meta) return Promise.resolve(false)
+    const key = `${origin}|${permission}`
+    const pendingKey = `${accountId}|${key}`
+    const pending = this.pendingPermissionPrompts.get(pendingKey)
+    if (pending) return pending
+
+    const host = new URL(origin).hostname
+    const what =
+      permission === 'media'
+        ? details.mediaTypes?.includes('video')
+          ? details.mediaTypes.includes('audio')
+            ? 'use your camera and microphone'
+            : 'use your camera'
+          : 'use your microphone'
+        : 'read your clipboard'
+    const win = (wc && BrowserWindow.fromWebContents(wc)) ?? BrowserWindow.getFocusedWindow()
+
+    const ask = dialog
+      .showMessageBox(win ?? BrowserWindow.getAllWindows()[0], {
+        type: 'question',
+        message: `“${host}” wants to ${what}`,
+        detail: `Your answer is remembered for this site in the ${meta.label} account.`,
+        buttons: ['Allow', 'Don’t Allow'],
+        defaultId: 1,
+        cancelId: 1
+      })
+      .then(({ response }) => {
+        const allow = response === 0
+        ;(meta.sitePermissions ??= {})[key] = allow
+        if (!meta.ephemeral) this.onState?.()
+        return allow
+      })
+      .finally(() => this.pendingPermissionPrompts.delete(pendingKey))
+    this.pendingPermissionPrompts.set(pendingKey, ask)
+    return ask
+  }
+
+  /** Preferences → reset: forget every remembered site answer, all accounts. */
+  clearSitePermissions(): void {
+    for (const meta of this.accounts.values()) meta.sitePermissions = undefined
+    this.onState?.()
   }
 
   // ---- window lifecycle -------------------------------------------------
@@ -1752,7 +1837,8 @@ export class AccountManager implements ExtensionTabDelegate {
         avatarUrl: meta.avatarUrl,
         bookmarks: meta.bookmarks,
         muted: meta.muted,
-        tabs
+        tabs,
+        sitePermissions: meta.sitePermissions
       }
     })
   }

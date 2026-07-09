@@ -204,6 +204,7 @@ const api: FlitApi = {
   omniboxInput: (text, rect) => ipcRenderer.invoke('omnibox:input', text, rect),
   omniboxNav: (delta) => ipcRenderer.invoke('omnibox:nav', delta),
   omniboxHide: () => ipcRenderer.invoke('omnibox:hide'),
+  resetSitePermissions: () => ipcRenderer.invoke('prefs:reset-site-permissions'),
   chooseDownloadsDir: () => ipcRenderer.invoke('prefs:choose-downloads-dir'),
   isDefaultBrowser: () => ipcRenderer.invoke('prefs:is-default-browser'),
   makeDefaultBrowser: () => ipcRenderer.invoke('prefs:make-default-browser'),

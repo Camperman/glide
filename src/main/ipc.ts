@@ -219,6 +219,7 @@ export function registerIpc(
     })
     return result.canceled ? '' : (result.filePaths[0] ?? '')
   })
+  ipcMain.handle('prefs:reset-site-permissions', () => accounts.clearSitePermissions())
   ipcMain.handle('prefs:is-default-browser', () => app.isDefaultProtocolClient('http'))
   ipcMain.handle('prefs:make-default-browser', () => {
     app.setAsDefaultProtocolClient('http')

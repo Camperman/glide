@@ -173,6 +173,17 @@ export function PreferencesDialog({
               </div>
 
               <div className="prefs__row">
+                <label>Site permissions</label>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => void window.flit.resetSitePermissions()}
+                >
+                  Reset remembered answers
+                </button>
+              </div>
+
+              <div className="prefs__row">
                 <label htmlFor="pref-newtab">New tab opens</label>
                 <input
                   id="pref-newtab"

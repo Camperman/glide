@@ -101,6 +101,14 @@ per-build, no node/preload on account views, signature-verified updates,
   DMG is the Electron floor — already lean vs Chrome/Slack/VS Code.
 - Kept `allow-unsigned-executable-memory` entitlement (removal untested;
   candidate for a future pass).
+- **Site-permission prompts (v0.7.4)**: non-Google origins asking for
+  camera/mic/clipboard-read get a native Allow / Don't Allow dialog; the
+  answer is remembered **per origin per account** (`sitePermissions` on the
+  account, persisted; in-flight prompts deduped). Preferences → General →
+  "Reset remembered answers" clears all. The synchronous permission-check
+  handler reports settled state only; the ask happens in the async request
+  handler. Manual check: getUserMedia on a non-Google site → dialog; answer
+  persists across restarts.
 - **Dark palettes restructured Chrome-style** in all six profiles: strip
   darkest → toolbar/active tab clearly lighter → omnibox lighter still →
   deep content gutter; tab hover now visible (was strip-colored).

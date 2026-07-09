@@ -305,7 +305,8 @@ app.whenReady().then(() => {
       avatarUrl: a.avatarUrl,
       bookmarks: a.bookmarks,
       muted: a.muted,
-      tabs: a.tabs
+      tabs: a.tabs,
+      sitePermissions: a.sitePermissions
     }))
   accounts.loadMetadata(configs)
   if (state.zoomFactor) accounts.setZoom(state.zoomFactor)

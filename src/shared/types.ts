@@ -315,6 +315,8 @@ export interface FlitApi {
   setPrefs(patch: Partial<Prefs>): Promise<void>
   /** Subscribe to preference/appearance changes. Returns an unsubscribe fn. */
   onPrefsChanged(cb: (state: PrefsState) => void): () => void
+  /** Forget every remembered site-permission answer (all accounts). */
+  resetSitePermissions(): Promise<void>
   /** Native folder picker for the downloads location ('' if cancelled). */
   chooseDownloadsDir(): Promise<string>
   /** Is Flit the macOS default browser right now? */
