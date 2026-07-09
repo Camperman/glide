@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flit — a web browser for macOS</title>
+<meta name="description" content="Flit is a web browser for macOS built around running multiple isolated Google accounts side by side. Free and open source (GPL-3.0).">
+<style>
+  :root {
+    --bg: #16181d;
+    --bg-soft: #1e2128;
+    --panel: #23262e;
+    --border: #32363f;
+    --text: #e8eaed;
+    --muted: #9aa0a9;
+    --accent: #f0b43c;
+    --accent-text: #1a1508;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+  header { padding: 72px 0 40px; text-align: center; }
+  .logo {
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+  h1 { font-size: clamp(32px, 6vw, 52px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+  h1 .em { color: var(--accent); }
+  .sub {
+    max-width: 640px;
+    margin: 20px auto 0;
+    font-size: clamp(16px, 2.4vw, 19px);
+    color: var(--muted);
+  }
+  .cta { margin-top: 32px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    padding: 13px 26px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform .1s ease, opacity .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); opacity: .92; }
+  .btn-primary { background: var(--accent); color: var(--accent-text); }
+  .btn-ghost { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+  .fineprint { margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .fineprint a { color: var(--muted); }
+  .shot {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 60px rgba(0,0,0,.45);
+  }
+  .hero-shot { margin: 48px auto 0; }
+  section { padding: 64px 0 0; }
+  section:last-of-type { padding-bottom: 64px; }
+  h2 { font-size: clamp(24px, 4vw, 32px); letter-spacing: -0.01em; margin-bottom: 10px; }
+  .lead { color: var(--muted); max-width: 640px; margin-bottom: 32px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+  }
+  .card h3 { font-size: 16px; margin-bottom: 6px; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
+  .checks { list-style: none; margin-top: 14px; }
+  .checks li { padding-left: 28px; position: relative; margin-bottom: 12px; color: var(--muted); font-size: 15.5px; }
+  .checks li strong { color: var(--text); }
+  .checks li::before {
+    content: "✓";
+    position: absolute; left: 0; top: 0;
+    color: var(--accent); font-weight: 700;
+  }
+  .everything { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-size: 13.5px;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 13px;
+    white-space: nowrap;
+  }
+  footer {
+    border-top: 1px solid var(--border);
+    margin-top: 72px;
+    padding: 36px 0 56px;
+    font-size: 14px;
+    color: var(--muted);
+    text-align: center;
+  }
+  footer a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--border); }
+  footer a:hover { border-bottom-color: var(--accent); }
+  footer .links { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <span class="logo">Flit</span>
+  <h1>A web browser for macOS,<br>with a session for <span class="em">every account</span>.</h1>
+  <p class="sub">
+    Flit is a Chromium-based browser built around one idea: run all of your
+    Google accounts side by side, each in its own fully isolated,
+    permanently-signed-in session — one click apart.
+  </p>
+  <div class="cta">
+    <a class="btn btn-primary" href="https://github.com/Camperman/flit/releases/latest">Download for macOS&nbsp;(Apple&nbsp;Silicon)</a>
+    <a class="btn btn-ghost" href="https://github.com/Camperman/flit">View source on GitHub</a>
+  </div>
+  <p class="fineprint">Free &amp; open source (GPL-3.0) · Signed &amp; notarized DMG · Auto-updates</p>
+  <img class="shot hero-shot" src="assets/hero.png" alt="Flit browsing a Wikipedia article, with three account avatars in the left sidebar and a pinned-apps rail" width="2560" height="1600">
+</header>
+
+<main class="wrap">
+
+  <section>
+    <h2>Everything you expect from a browser</h2>
+    <p class="lead">
+      Flit isn't a wrapper around a handful of sites — it's a real browser.
+      Type a URL and go anywhere on the web, rendered by the same engine as Chrome.
+    </p>
+    <div class="split">
+      <ul class="checks">
+        <li><strong>Omnibox address bar</strong> — enter a URL to navigate directly, or type anything to search with Google, DuckDuckGo, or Bing, with live search suggestions and history &amp; bookmark autocomplete.</li>
+        <li><strong>Bookmarks bar</strong> — ⌘D to bookmark, folders, and one-click import of your Chrome bookmarks.</li>
+        <li><strong>Tabs, history, downloads</strong> — a full tab strip, browsing history with a dedicated page (⌘Y), and a downloads manager.</li>
+        <li><strong>Set it as your default browser</strong> — Flit registers for http and https; links from any app open in your active account.</li>
+      </ul>
+      <img class="shot" src="assets/omnibox.png" alt="Flit's address bar showing live search suggestions while typing a query" width="2560" height="1600">
+    </div>
+  </section>
+
+  <section>
+    <h2>One browser, all of your accounts</h2>
+    <p class="lead">
+      Each account in the sidebar is a completely separate browsing session.
+      Accounts never bleed into each other and never log each other out —
+      isolation is verified by an automated test on every build.
+    </p>
+    <div class="grid">
+      <div class="card">
+        <h3>Always signed in</h3>
+        <p>Every account keeps its own cookies, storage, and logins in a persistent partition. Switch with one click, ⌘1–9, or the ⌘K command palette.</p>
+      </div>
+      <div class="card">
+        <h3>Pinned apps per account</h3>
+        <p>Pin Gmail, Calendar, Drive, or any site as an app with its own favicon and unread badge — per account, always a click away.</p>
+      </div>
+      <div class="card">
+        <h3>Notifications that know who they are</h3>
+        <p>Native macOS notifications attributed to the right account, with per-account mute. Click one to jump straight to that account.</p>
+      </div>
+      <div class="card">
+        <h3>Chrome extensions</h3>
+        <p>Install extensions per account straight from the Chrome Web Store — ad blockers, password managers, and more.</p>
+      </div>
+      <div class="card">
+        <h3>Private by design</h3>
+        <p>Everything is stored locally on your Mac. No telemetry, no analytics, no account required to use the browser itself.</p>
+      </div>
+      <div class="card">
+        <h3>Feels at home on macOS</h3>
+        <p>Six color themes with light and dark appearance, incognito windows, multiple windows, find-in-page, print, spell-check, and auto-update.</p>
+      </div>
+    </div>
+    <div class="everything">
+      <span class="chip">Isolated sessions</span>
+      <span class="chip">Live search suggestions</span>
+      <span class="chip">History + omnibox autocomplete</span>
+      <span class="chip">Bookmarks + Chrome import</span>
+      <span class="chip">Downloads manager</span>
+      <span class="chip">Find in page</span>
+      <span class="chip">Print</span>
+      <span class="chip">Spell-check</span>
+      <span class="chip">Incognito</span>
+      <span class="chip">Multiple windows</span>
+      <span class="chip">Command palette (⌘K)</span>
+      <span class="chip">Unread badges</span>
+      <span class="chip">Per-account mute</span>
+      <span class="chip">Chrome extensions</span>
+      <span class="chip">Six themes, light/dark</span>
+      <span class="chip">Default browser</span>
+      <span class="chip">Auto-update</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Your whole workspace in one sidebar</h2>
+    <p class="lead">
+      Prefer everything in one column? The unified sidebar layout stacks your
+      accounts and pinned apps together on the left.
+    </p>
+    <img class="shot" src="assets/sidebar.png" alt="Flit's unified sidebar layout showing accounts and pinned app icons in a single left column, browsing GitHub" width="2560" height="1600">
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="links">
+      <a href="https://github.com/Camperman/flit/releases/latest">Download</a>
+      <a href="https://github.com/Camperman/flit">GitHub</a>
+      <a href="https://github.com/Camperman/flit/issues">Support (GitHub Issues)</a>
+      <a href="privacy.html">Privacy</a>
+    </div>
+    <p>Flit is free software, licensed under the <a href="https://github.com/Camperman/flit/blob/master/LICENSE">GPL-3.0</a>.</p>
+  </div>
+</footer>
+
+</body>
+</html>

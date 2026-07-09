@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy — Flit</title>
+<meta name="description" content="Flit's privacy policy: all data stays on your Mac; no telemetry or analytics.">
+<style>
+  :root {
+    --bg: #16181d;
+    --border: #32363f;
+    --text: #e8eaed;
+    --muted: #9aa0a9;
+    --accent: #f0b43c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 64px 24px 80px; }
+  .back { font-size: 14px; color: var(--muted); text-decoration: none; }
+  .back:hover { color: var(--accent); }
+  h1 { font-size: 34px; letter-spacing: -0.01em; margin: 18px 0 6px; }
+  .updated { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+  h2 { font-size: 20px; margin: 32px 0 8px; }
+  p, li { color: var(--muted); font-size: 16px; }
+  ul { padding-left: 22px; margin-top: 8px; }
+  li { margin-bottom: 8px; }
+  strong { color: var(--text); }
+  a { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Flit</a>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: July 9, 2026</p>
+
+  <p><strong>Short version: everything stays on your Mac.</strong> Flit is a
+  local desktop web browser. It has no accounts, no servers, and no interest
+  in your data.</p>
+
+  <h2>Data storage</h2>
+  <p>All browsing data lives locally on your computer:</p>
+  <ul>
+    <li><strong>Sessions and logins</strong> — each account's cookies and site
+      storage are kept in an isolated local session partition.</li>
+    <li><strong>History, bookmarks, downloads, and preferences</strong> — stored
+      in local files on your Mac.</li>
+  </ul>
+  <p>Flit never uploads, syncs, or transmits this data anywhere. Removing an
+  account wipes its session data from disk.</p>
+
+  <h2>No telemetry</h2>
+  <p>Flit contains no telemetry, analytics, crash reporting, or tracking of any
+  kind.</p>
+
+  <h2>Network connections Flit makes</h2>
+  <p>The only network traffic Flit generates is:</p>
+  <ul>
+    <li><strong>The sites you visit</strong> — requested directly, like any
+      browser. Each site's own privacy policy applies to what you do there.</li>
+    <li><strong>Search suggestions</strong> — as you type in the address bar,
+      the query is sent to your chosen search engine (Google, DuckDuckGo, or
+      Bing) to fetch live suggestions.</li>
+    <li><strong>Favicons and account avatars</strong> — small image fetches used
+      to draw site and account icons.</li>
+    <li><strong>Update checks</strong> — Flit checks GitHub Releases for new
+      versions and downloads updates from there.</li>
+  </ul>
+
+  <h2>Extensions</h2>
+  <p>If you install Chrome extensions, they are downloaded from the Chrome Web
+  Store and update from there. Extensions are third-party software with their
+  own privacy policies.</p>
+
+  <h2>Questions</h2>
+  <p>Flit is open source (GPL-3.0), so you can verify all of the above in the
+  <a href="https://github.com/Camperman/flit">source code</a>. Questions or
+  concerns: <a href="https://github.com/Camperman/flit/issues">GitHub Issues</a>.</p>
+</div>
+</body>
+</html>
