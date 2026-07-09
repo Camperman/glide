@@ -15,7 +15,7 @@
     "test:isolation": "playwright test tests/isolation.spec.ts",
     "guard": "node scripts/guard.mjs",
     "package": "npm run build && electron-builder --dir -c.mac.identity=null -c.mac.notarize=false",
-    "dist": "npm run build && APPLE_KEYCHAIN_PROFILE=glide electron-builder"
+    "dist": "npm run build && APPLE_KEYCHAIN_PROFILE=flit electron-builder"
   },
   "devDependencies": {
     "@playwright/test": "^1.47.0",

@@ -42,16 +42,15 @@ npm run dist         # signed + notarized DMG (requires signing setup below)
 keychain and these environment variables for notarization:
 
 ```sh
-# One-time: store notarization credentials in the keychain profile "glide"
-# (the profile name predates the app's rename to Flit; package.json expects it).
-xcrun notarytool store-credentials glide --apple-id "you@example.com" --team-id "XXXXXXXXXX"
+# One-time: store notarization credentials in the keychain profile "flit".
+xcrun notarytool store-credentials flit --apple-id "you@example.com" --team-id "XXXXXXXXXX"
 ```
 
 After `npm run dist`, optionally notarize + staple the DMG container itself
 (the app inside is already notarized; this just makes the DMG validate too):
 
 ```sh
-xcrun notarytool submit dist/Flit-*.dmg --keychain-profile glide --wait
+xcrun notarytool submit dist/Flit-*.dmg --keychain-profile flit --wait
 xcrun stapler staple dist/Flit-*.dmg
 ```
 
