@@ -7,7 +7,7 @@ import { BookmarksBar } from './BookmarksBar'
 import { ChromeImportDialog } from './ChromeImportDialog'
 import { AccountDialog, type DialogValues } from './AccountDialog'
 import { ShortcutDialog, type ShortcutValues } from './ShortcutDialog'
-import { Downloads } from './Downloads'
+import { DownloadsButton, DownloadsDrawer } from './Downloads'
 import { ExtensionCatalogDialog } from './ExtensionCatalogDialog'
 import { FindBar } from './FindBar'
 import { HistoryDialog } from './HistoryDialog'
@@ -92,7 +92,18 @@ export function App(): JSX.Element {
     )
     const offImport = window.flit.onImportBookmarks(() => setImportOpen(true))
     void window.flit.getDownloads().then(setDownloads)
-    const offDownloads = window.flit.onDownloadsState(setDownloads)
+    // Auto-open the drawer when a new download starts (it's a non-destructive
+    // side drawer now) — otherwise clicking a download link looks like a dead
+    // click until you notice the toolbar button.
+    const offDownloads = window.flit.onDownloadsState((next) => {
+      setDownloads((prev) => {
+        const known = new Set(prev.map((d) => d.id))
+        if (next.some((d) => d.state === 'progressing' && !known.has(d.id))) {
+          setDownloadsOpen(true)
+        }
+        return next
+      })
+    })
     void window.flit.isFirstRun().then(setWelcomeOpen)
     void window.flit.getPrefs().then(setPrefsState)
     const offPrefs = window.flit.onPrefsChanged(setPrefsState)
@@ -222,7 +233,6 @@ export function App(): JSX.Element {
           shortcutDialog ||
           bookmarkDialog ||
           importOpen ||
-          downloadsOpen ||
           prefsOpen ||
           historyOpen ||
           welcomeOpen ||
@@ -235,13 +245,18 @@ export function App(): JSX.Element {
     shortcutDialog,
     bookmarkDialog,
     importOpen,
-    downloadsOpen,
     prefsOpen,
     historyOpen,
     welcomeOpen,
     paletteOpen,
     extCatalogOpen
   ])
+
+  // The downloads drawer isn't an overlay — main shrinks the web view so the
+  // page stays visible beside it.
+  useEffect(() => {
+    void window.flit.setDownloadsPanelOpen(downloadsOpen)
+  }, [downloadsOpen])
 
   // Theme: main owns resolution (nativeTheme + appearance pref) and pushes the
   // resolved dark/light with every prefs broadcast — one source of truth.
@@ -413,12 +428,7 @@ export function App(): JSX.Element {
           >
             {targetUrl && <span className="topbar__target">{targetUrl}</span>}
             <UpdatePill state={updateState} onRestart={() => void window.flit.restartToUpdate()} />
-            <Downloads
-              downloads={downloads}
-              open={downloadsOpen}
-              onToggle={() => setDownloadsOpen((v) => !v)}
-              onClose={() => setDownloadsOpen(false)}
-            />
+            <DownloadsButton downloads={downloads} onToggle={() => setDownloadsOpen((v) => !v)} />
           </TopBar>
           {findOpen && (
             <FindBar
@@ -445,14 +455,19 @@ export function App(): JSX.Element {
               }}
             />
           )}
-          <main className="content" data-testid="content">
-            {accounts.length === 0 && (
-              <div className="placeholder">
-                <h1>Flit</h1>
-                <p>No accounts yet — click the + to add one.</p>
-              </div>
+          <div className="content-row">
+            <main className="content" data-testid="content">
+              {accounts.length === 0 && (
+                <div className="placeholder">
+                  <h1>Flit</h1>
+                  <p>No accounts yet — click the + to add one.</p>
+                </div>
+              )}
+            </main>
+            {downloadsOpen && (
+              <DownloadsDrawer downloads={downloads} onClose={() => setDownloadsOpen(false)} />
             )}
-          </main>
+          </div>
         </div>
       </div>
 

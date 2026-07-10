@@ -46,6 +46,8 @@ export const TITLE_BAR_HEIGHT = 38
 export const TOP_BAR_HEIGHT = 44
 export const BOOKMARKS_BAR_HEIGHT = 36
 export const FIND_BAR_HEIGHT = 36
+/** Width of the downloads drawer; must match .downloads__drawer in index.css. */
+export const DOWNLOADS_PANEL_WIDTH = 320
 // The page floats as a rounded card with a dark-gray chrome gutter around it.
 const CONTENT_INSET = 8
 const CONTENT_RADIUS = 10
@@ -234,6 +236,10 @@ interface WindowState {
   activeAccountId?: string
   overlayOpen: boolean
   findOpen: boolean
+  /** Downloads drawer open → the web view shrinks from the right (the drawer
+   *  is DOM, which can't paint over a native view — same trick as the find
+   *  bar vertically). */
+  downloadsOpen: boolean
   recentlyClosed: ClosedTab[]
   perAccount: Map<string, WindowAccount>
 }
@@ -680,6 +686,7 @@ export class AccountManager implements ExtensionTabDelegate {
       win,
       overlayOpen: false,
       findOpen: false,
+      downloadsOpen: false,
       recentlyClosed: [],
       perAccount: new Map()
     }
@@ -2100,13 +2107,23 @@ export class AccountManager implements ExtensionTabDelegate {
     if (!tab || !tab.view) return
     const left = this.contentLeft()
     const top = this.topChrome(ws)
+    const right = ws.downloadsOpen ? DOWNLOADS_PANEL_WIDTH : 0
     const i = CONTENT_INSET
     tab.view.setBounds({
       x: left + i,
       y: top + i,
-      width: Math.max(0, width - left - i * 2),
+      width: Math.max(0, width - left - right - i * 2),
       height: Math.max(0, height - top - i * 2)
     })
+  }
+
+  /** Downloads drawer visibility for one window (drawer is DOM; the web view
+   *  yields DOWNLOADS_PANEL_WIDTH on the right while it's open). */
+  setDownloadsPanel(win: BrowserWindow, open: boolean): void {
+    const ws = this.wsFor(win)
+    if (!ws || ws.downloadsOpen === open) return
+    ws.downloadsOpen = open
+    this.layout(ws)
   }
 
   // ---- emit to a single window's renderer -------------------------------

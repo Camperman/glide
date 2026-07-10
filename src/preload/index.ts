@@ -247,6 +247,7 @@ const api: FlitApi = {
   showDownload: (id) => ipcRenderer.invoke('downloads:show', id),
   cancelDownload: (id) => ipcRenderer.invoke('downloads:cancel', id),
   clearDownloads: () => ipcRenderer.invoke('downloads:clear'),
+  setDownloadsPanelOpen: (open) => ipcRenderer.invoke('downloads:panel', open),
   __test: {
     partitions: () => ipcRenderer.invoke('__test:partitions'),
     setCookie: (arg) => ipcRenderer.invoke('__test:set-cookie', arg),

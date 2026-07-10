@@ -390,6 +390,8 @@ export interface FlitApi {
   cancelDownload(id: string): Promise<void>
   /** Clear finished/cancelled downloads from the list. */
   clearDownloads(): Promise<void>
+  /** Downloads drawer open/closed — main shrinks the web view to fit it. */
+  setDownloadsPanelOpen(open: boolean): Promise<void>
   /** Test-only helpers used by tests/isolation.spec.ts to prove session isolation. */
   __test: {
     partitions(): Promise<Record<string, string>>

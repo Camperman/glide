@@ -219,6 +219,10 @@ export function registerIpc(
 
   // ---- downloads (global list, shared across windows) ----
   ipcMain.handle('downloads:list', () => downloads.list())
+  ipcMain.handle('downloads:panel', (e, open: boolean) => {
+    const win = winOf(e)
+    if (win) accounts.setDownloadsPanel(win, open)
+  })
   ipcMain.handle('downloads:open', (_e, id: string) => downloads.open(id))
   ipcMain.handle('downloads:show', (_e, id: string) => downloads.show(id))
   ipcMain.handle('downloads:cancel', (_e, id: string) => downloads.cancel(id))

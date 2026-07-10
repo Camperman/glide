@@ -860,11 +860,19 @@ body {
   font-size: 11px;
 }
 
+/* Content area row: the (native-view-backed) content + optional right drawer. */
+.content-row {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
 .content {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
 }
 
 .placeholder {
@@ -1234,15 +1242,23 @@ body {
   pointer-events: none;
 }
 
-/* Downloads button (right of the address bar) + drop-down panel */
-.downloads {
-  position: relative;
-  margin-left: auto; /* pin to the topbar's right edge */
-}
-
+/* Downloads button (right of the address bar) + right-side drawer */
 .downloads__btn {
   position: relative;
-  font-size: 15px;
+}
+
+/* One-shot pop when a download kicks off (class applied while active). */
+.downloads__btn--active {
+  animation: downloads-pop 0.4s ease;
+}
+
+@keyframes downloads-pop {
+  30% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .downloads__ring {
@@ -1270,20 +1286,23 @@ body {
   transition: stroke-dashoffset 0.2s;
 }
 
-.downloads__panel {
-  position: absolute;
-  top: 38px;
-  right: 0;
-  z-index: 40;
+/* Drawer column: width must match DOWNLOADS_PANEL_WIDTH in accounts.ts (the
+   web view yields exactly this much on the right while it's open). */
+.downloads__drawer {
+  flex: 0 0 320px;
   width: 320px;
-  max-height: 400px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--modal-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: var(--panel-bg);
+  border-left: 1px solid var(--border);
   overflow: hidden;
+}
+
+.downloads__empty {
+  padding: 14px 12px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .downloads__head {
@@ -1736,10 +1755,14 @@ body {
   color: var(--muted);
 }
 
-/* When the target readout is present it takes over margin-left:auto;
-   keep the downloads chip snug against it. */
-.topbar__target + .downloads {
-  margin-left: 8px;
+/* The spacer pins everything after it (target readout, update pill,
+   downloads button) to the topbar's right edge. */
+.topbar__spacer {
+  flex: 1;
+}
+
+.topbar__target {
+  margin-left: 0;
 }
 
 /* Incognito session avatar: dashed ring, glasses glyph */

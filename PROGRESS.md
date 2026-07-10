@@ -394,6 +394,26 @@ receive a mail there, click the banner → Glide focuses and switches to B.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Fix — ✅ Downloads: drawer instead of blanking overlay + auto-open +
+  real icons.** Three complaints, one root cause: the downloads panel was a
+  DOM dropdown that could only appear by hiding the native web view (the
+  modal-overlay trick) — hence "clicking the button blanks the whole window",
+  and hence the old decision never to auto-open on download start, which made
+  starting a download feel like a dead click. Rework: the panel is now a
+  **right-side drawer** — main shrinks the active view by
+  `DOWNLOADS_PANEL_WIDTH` (320, per-window `downloadsOpen`, same pattern as
+  the find bar vertically), so the page stays visible and interactive beside
+  it. That made auto-open safe: **the drawer now opens itself when a new
+  download starts** (renderer diffs incoming `downloads:state` for a new
+  `progressing` id), plus a one-shot pop animation + the existing progress
+  ring on the button. Icons: toolbar button is now a proper tray-arrow SVG
+  (was a "↓" text glyph); "Show in Finder" is a folder SVG (was 🔍).
+  `Downloads.tsx` split into `DownloadsButton` (top bar) + `DownloadsDrawer`
+  (content row); `downloadsOpen` removed from the overlay condition; a
+  `.topbar__spacer` now pins the right cluster (was the old wrapper's
+  margin-auto). Verified with a real download: drawer auto-opened, view
+  bounds 1116→796 (exactly −320) with visible:true throughout, restored on
+  close. guard + build + smoke (×2) + isolation pass.
 - **Fix — ✅ Update flow: progress feedback + surfaced errors.** The interactive
   "Check for Updates…" showed a one-shot "downloading in background" dialog then
   gave **no feedback**, and the `error` handler swallowed everything — so a
