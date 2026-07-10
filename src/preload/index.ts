@@ -10,7 +10,8 @@ import type {
   NavState,
   PrefsState,
   Shortcut,
-  TabsState
+  TabsState,
+  UpdateState
 } from '../shared/types'
 
 // Typed, minimal bridge exposed to the renderer. The renderer holds no session
@@ -19,6 +20,13 @@ const api: FlitApi = {
   newWindow: () => ipcRenderer.invoke('window:new'),
   getAppVersion: () => ipcRenderer.invoke('app:version'),
   checkForUpdates: () => ipcRenderer.invoke('app:check-updates'),
+  getUpdateState: () => ipcRenderer.invoke('app:update-state'),
+  onUpdateState: (cb) => {
+    const listener = (_event: unknown, state: UpdateState): void => cb(state)
+    ipcRenderer.on('update:state', listener)
+    return () => ipcRenderer.removeListener('update:state', listener)
+  },
+  restartToUpdate: () => ipcRenderer.invoke('app:restart-to-update'),
   isFirstRun: () => ipcRenderer.invoke('app:first-run'),
   completeFirstRun: () => ipcRenderer.invoke('app:first-run-done'),
   listAccounts: () => ipcRenderer.invoke('accounts:list'),

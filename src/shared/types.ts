@@ -44,6 +44,14 @@ export interface Shortcut {
   favicon?: string
 }
 
+/** Auto-update progress, pushed to the renderer for the toolbar indicator. */
+export interface UpdateState {
+  status: 'idle' | 'checking' | 'downloading' | 'ready' | 'error'
+  percent?: number
+  version?: string
+  message?: string
+}
+
 /**
  * Where the app rail is rendered.
  * - 'left'    — its own vertical column beside the account sidebar
@@ -211,6 +219,12 @@ export interface FlitApi {
   getAppVersion(): Promise<string>
   /** Interactive update check — dialogs for up-to-date / downloading / error. */
   checkForUpdates(): Promise<void>
+  /** Current auto-update status (for the toolbar indicator on mount). */
+  getUpdateState(): Promise<UpdateState>
+  /** Subscribe to auto-update progress. Returns an unsubscribe fn. */
+  onUpdateState(cb: (state: UpdateState) => void): () => void
+  /** Restart now to install a downloaded update. */
+  restartToUpdate(): Promise<void>
   /** Fresh install? Drives the one-time welcome flow. */
   isFirstRun(): Promise<boolean>
   /** Welcome flow finished — never show it again. */

@@ -394,6 +394,24 @@ receive a mail there, click the banner → Glide focuses and switches to B.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Fix — ✅ Update flow: progress feedback + surfaced errors.** The interactive
+  "Check for Updates…" showed a one-shot "downloading in background" dialog then
+  gave **no feedback**, and the `error` handler swallowed everything — so a
+  stalled/failed download looked like "nothing happens" and the Restart prompt
+  never came. Now: (1) a **toolbar update pill** (`UpdatePill.tsx`, left of the
+  downloads button) shows checking → "Updating NN%" (from `download-progress`)
+  → an accent **"↻ Restart to update"** button when ready; (2) the **Dock
+  progress bar** mirrors the download (`win.setProgressBar`); (3) errors during
+  a **user-initiated** check now surface a dialog (automatic background checks
+  stay silent — expected to fail on unsigned builds / before artifacts exist);
+  (4) `UpdateState` pushed via `update:state`, plus `getUpdateState` on mount
+  and a `restartToUpdate` IPC for the pill's button. The reboot behavior was
+  already correct by design (prompt Restart Now / Later, autoInstallOnAppQuit)
+  — it just wasn't being reached. If a check runs while an update is already
+  downloaded, it now re-offers the restart immediately. Verified: pill reflects
+  checking/downloading-45%/ready/idle transitions and renders a button when
+  ready (simulated `update:state` pushes; real Squirrel download needs two
+  signed builds). guard + build + smoke (×2) + isolation pass.
 - **Polish — ✅ Extensions menu (puzzle piece) + quick-install catalog.**
   Chrome-parity extension management: (1) a **puzzle-piece button** in the top
   bar (always visible, right of the extension actions) opens a **native menu**

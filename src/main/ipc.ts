@@ -14,7 +14,7 @@ import type { ExtensionManager } from './extensions'
 import type { HistoryManager } from './history'
 import type { OmniboxManager } from './omnibox'
 import type { PrefsManager } from './prefs'
-import { checkForUpdatesInteractive } from './updater'
+import { checkForUpdatesInteractive, getUpdateState, restartToUpdate } from './updater'
 import type {
   AccountPatch,
   AccountPreset,
@@ -227,6 +227,8 @@ export function registerIpc(
   // ---- app info / updates ----
   ipcMain.handle('app:version', () => app.getVersion())
   ipcMain.handle('app:check-updates', () => checkForUpdatesInteractive())
+  ipcMain.handle('app:update-state', () => getUpdateState())
+  ipcMain.handle('app:restart-to-update', () => restartToUpdate())
 
   // ---- first-run onboarding ----
   ipcMain.handle('app:first-run', () => firstRun.get())

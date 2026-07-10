@@ -12,6 +12,7 @@ import { ExtensionCatalogDialog } from './ExtensionCatalogDialog'
 import { FindBar } from './FindBar'
 import { HistoryDialog } from './HistoryDialog'
 import { Palette } from './Palette'
+import { UpdatePill } from './UpdatePill'
 import { PreferencesDialog } from './PreferencesDialog'
 import { WelcomeDialog } from './WelcomeDialog'
 import type {
@@ -22,7 +23,8 @@ import type {
   DownloadInfo,
   NavState,
   PrefsState,
-  TabInfo
+  TabInfo,
+  UpdateState
 } from '../shared/types'
 
 interface DialogState {
@@ -65,6 +67,7 @@ export function App(): JSX.Element {
   const [prefsOpen, setPrefsOpen] = useState(false)
   const [hasExtensions, setHasExtensions] = useState(false)
   const [extCatalogOpen, setExtCatalogOpen] = useState(false)
+  const [updateState, setUpdateState] = useState<UpdateState>({ status: 'idle' })
   const [findOpen, setFindOpen] = useState(false)
   const [targetUrl, setTargetUrl] = useState('')
   const [bookmarkDialog, setBookmarkDialog] = useState<BookmarkDialogState | null>(null)
@@ -150,8 +153,11 @@ export function App(): JSX.Element {
       openEditShortcut(shortcutId)
     )
     const offExtCatalog = window.flit.onOpenExtensionCatalog(() => setExtCatalogOpen(true))
+    void window.flit.getUpdateState().then(setUpdateState)
+    const offUpdate = window.flit.onUpdateState(setUpdateState)
     return () => {
       offExtCatalog()
+      offUpdate()
       offActive()
       offNav()
       offUnread()
@@ -406,6 +412,7 @@ export function App(): JSX.Element {
             onNavigate={(url) => void window.flit.navigate(url)}
           >
             {targetUrl && <span className="topbar__target">{targetUrl}</span>}
+            <UpdatePill state={updateState} onRestart={() => void window.flit.restartToUpdate()} />
             <Downloads
               downloads={downloads}
               open={downloadsOpen}

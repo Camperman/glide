@@ -1045,6 +1045,48 @@ body {
   gap: 8px;
 }
 
+/* Auto-update toolbar indicator (sits left of the downloads button). */
+.update-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 13px;
+  border: 1px solid var(--border);
+  background: var(--omnibox-bg);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.update-pill--ready {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.update-pill--ready:hover {
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+.update-pill__spinner {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--muted) 40%, transparent);
+  border-top-color: var(--accent);
+  animation: update-spin 0.7s linear infinite;
+}
+
+@keyframes update-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Add-app dialog with the quick-add catalog: wider, catalog scrolls. */
 .modal--catalog {
   width: 560px;
