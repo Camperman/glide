@@ -1,6 +1,6 @@
 {
   "name": "flit",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "description": "Multi-account Google workspace browser for macOS",
   "private": true,
   "license": "GPL-3.0-only",
