@@ -130,7 +130,6 @@ export function TopBar({
           }}
         />
       </form>
-      <span className="topbar__spacer" />
       {partition && showActions && (
         <browser-action-list class="topbar__actions" partition={partition} />
       )}

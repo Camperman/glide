@@ -394,6 +394,27 @@ receive a mail there, click the banner → Glide focuses and switches to B.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Polish — ✅ Chrome-style bottom-left link readout + full-width URL bar.**
+  (1) Hovered-link URLs now show in a **status bubble at the content's
+  bottom-left**, replacing the top-bar right-aligned readout. Phase 24 called
+  bottom-left "impossible since DOM can't paint over the account views" — the
+  omnibox precedent solves it: the bubble is a tiny trusted `WebContentsView`
+  (`src/main/statusBubble.ts`, script-free data-URL doc, no preload) floated
+  over the page. Main sets the text via executeJavaScript, measures it, sizes
+  the view (clamped to half the window), themes it from
+  `nativeTheme.shouldUseDarkColors`, and re-appends via addChildView so it
+  stays above tab views. **Cursor dodge** like Chrome: if the pointer is in
+  the bottom-left corner (screen.getCursorScreenPoint at show time), the
+  bubble jumps to the bottom-right instead of flickering under the cursor.
+  Hidden on unhover (empty update-target-url), tab/account/overlay changes
+  (refreshVisibility), and window resize. `nav:target-url` IPC + renderer
+  span removed. (2) **URL bar fills** all space between the nav buttons and
+  the right-anchored cluster (extension actions, puzzle, update pill,
+  downloads) — dropped the 680px cap and the spacer. Verified: hover on a
+  real link → bubble visible at contentLeft+8 / bottom−32 with the exact
+  href, width clamped, hides on unhover; screenshot confirms full-width
+  address bar with the right cluster pinned. guard + build + smoke (×2) +
+  isolation pass.
 - **Fix — ✅ Downloads: drawer instead of blanking overlay + auto-open +
   real icons.** Three complaints, one root cause: the downloads panel was a
   DOM dropdown that could only appear by hiding the native web view (the

@@ -516,9 +516,11 @@ body {
   cursor: default;
 }
 
+/* The address bar fills all space between the nav buttons and the
+   right-anchored cluster (extension actions, puzzle, updates, downloads). */
 .topbar__address {
   flex: 1;
-  max-width: 680px;
+  min-width: 0;
   display: flex;
 }
 
@@ -1743,28 +1745,6 @@ body {
 }
 
 /* Hovered-link URL readout (right side of the top bar) */
-.topbar__target {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 340px;
-  margin-left: auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-  color: var(--muted);
-}
-
-/* The spacer pins everything after it (target readout, update pill,
-   downloads button) to the topbar's right edge. */
-.topbar__spacer {
-  flex: 1;
-}
-
-.topbar__target {
-  margin-left: 0;
-}
-
 /* Incognito session avatar: dashed ring, glasses glyph */
 .account--incognito {
   background: transparent;

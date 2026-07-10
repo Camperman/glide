@@ -69,7 +69,6 @@ export function App(): JSX.Element {
   const [extCatalogOpen, setExtCatalogOpen] = useState(false)
   const [updateState, setUpdateState] = useState<UpdateState>({ status: 'idle' })
   const [findOpen, setFindOpen] = useState(false)
-  const [targetUrl, setTargetUrl] = useState('')
   const [bookmarkDialog, setBookmarkDialog] = useState<BookmarkDialogState | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [welcomeOpen, setWelcomeOpen] = useState(false)
@@ -112,7 +111,6 @@ export function App(): JSX.Element {
     const offHistory = window.flit.onOpenHistory(() => setHistoryOpen(true))
     const offPalette = window.flit.onOpenPalette(() => setPaletteOpen(true))
     const offFindClose = window.flit.onFindClose(() => setFindOpen(false))
-    const offTarget = window.flit.onTargetUrl(setTargetUrl)
     const offActive = window.flit.onActiveChanged(setActiveId)
     const offNav = window.flit.onNavState(setNav)
     const offUnread = window.flit.onUnread(({ id, count }) =>
@@ -186,7 +184,6 @@ export function App(): JSX.Element {
       offFindClose()
       offHistory()
       offPalette()
-      offTarget()
       offEditBookmark()
       offEditAccount()
       offEditShortcut()
@@ -426,7 +423,6 @@ export function App(): JSX.Element {
             onReload={() => void window.flit.reload()}
             onNavigate={(url) => void window.flit.navigate(url)}
           >
-            {targetUrl && <span className="topbar__target">{targetUrl}</span>}
             <UpdatePill state={updateState} onRestart={() => void window.flit.restartToUpdate()} />
             <DownloadsButton downloads={downloads} onToggle={() => setDownloadsOpen((v) => !v)} />
           </TopBar>

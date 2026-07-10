@@ -301,8 +301,6 @@ export interface FlitApi {
   toggleTabMute(accountId: string, tabId: string): Promise<void>
   /** Right-click menu for a tab (Pin to Apps / Duplicate / Close). */
   showTabMenu(accountId: string, tabId: string): Promise<void>
-  /** Hovered-link URL from the active page ('' when unhovered). */
-  onTargetUrl(cb: (url: string) => void): () => void
   getTabs(accountId: string): Promise<TabInfo[]>
   /** Subscribe to the active account's open tabs. Returns an unsubscribe fn. */
   onTabsState(cb: (state: TabsState) => void): () => void

@@ -33,6 +33,7 @@ import type {
   TabInfo
 } from '../shared/types'
 import { PRESET_HOMES } from '../shared/types'
+import { StatusBubble } from './statusBubble'
 import type { MenuItemConstructorOptions } from 'electron'
 import type { PersistedAccount, PersistedTab } from './persistence'
 import type { DownloadManager } from './downloads'
@@ -544,6 +545,9 @@ export class AccountManager implements ExtensionTabDelegate {
    *  account from any webContents on an account partition (incl. popups). */
   private readonly sessionAccounts = new Map<Electron.Session, string>()
 
+  /** Bottom-left hovered-link readout (a small native view; see statusBubble.ts). */
+  private readonly statusBubble = new StatusBubble()
+
   /** Chrome-style ask for a sensitive permission on a non-Google origin;
    *  the answer is remembered per origin per account. */
   private promptSitePermission(
@@ -842,11 +846,12 @@ export class AccountManager implements ExtensionTabDelegate {
       this.emitApps(ws, accountId)
     })
 
-    // Hovered-link URL → readout in the chrome (DOM can't float over views).
+    // Hovered-link URL → Chrome-style bottom-left status bubble (a native
+    // view — DOM can't float over the page view).
     wc.on('update-target-url', (_e, url) => {
-      if (isActiveTab() && !ws.win.isDestroyed()) {
-        ws.win.webContents.send('nav:target-url', url)
-      }
+      if (!isActiveTab() || ws.win.isDestroyed()) return
+      if (url) this.statusBubble.show(ws.win, url, this.contentLeft())
+      else this.statusBubble.hide(ws.win)
     })
 
     // Rebuilt views (after a discard) keep the user's mute choice.
@@ -2086,6 +2091,9 @@ export class AccountManager implements ExtensionTabDelegate {
   }
 
   private refreshVisibility(ws: WindowState): void {
+    // Any visibility change (tab/account switch, overlay) invalidates a
+    // lingering hovered-link bubble.
+    this.statusBubble.hide(ws.win)
     this.materializeActive(ws)
     for (const [accountId, wa] of ws.perAccount) {
       for (const tab of wa.tabs) {
