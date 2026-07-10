@@ -213,6 +213,9 @@ interface Tab {
    *  page — the address bar shows empty + focused (Chrome-style) until the tab
    *  navigates somewhere else. */
   blank?: boolean
+  /** User clicked into a blank tab's page — the address-bar focus guard
+   *  disarms so the page keeps focus. */
+  engaged?: boolean
   /** Recent renderer-crash timestamps (rate-limits auto-reload). */
   crashTimes?: number[]
 }
@@ -248,6 +251,12 @@ interface WindowState {
 // Sentinel logged by the injected Notification wrapper when the user clicks a
 // notification; main hears it via 'console-message' and switches to the account.
 const NOTIFICATION_CLICK_SENTINEL = '__FLIT_NOTIFICATION_CLICK__'
+
+// Logged (once) when the user mousedowns a blank new tab's page — that's
+// explicit intent to use the page, so the address-bar focus guard disarms.
+const PAGE_ENGAGED_SENTINEL = '__FLIT_PAGE_ENGAGED__'
+const PAGE_ENGAGED_SCRIPT = `window.addEventListener('mousedown',
+  () => console.log('${PAGE_ENGAGED_SENTINEL}'), { capture: true, once: true })`
 
 // Wraps window.Notification in the page so clicks on Google's HTML5
 // notifications are observable from main. Read-only + one-way (console.log);
@@ -827,16 +836,27 @@ export class AccountManager implements ExtensionTabDelegate {
       void wc.executeJavaScript(NOTIFICATION_HOOK_SCRIPT, true).catch(() => {})
       this.extractAvatar(accountId, wc)
       setTimeout(() => this.extractAvatar(accountId, wc), 2000)
-      // A blank new tab's home page (e.g. Google) autofocuses its own search
-      // box, which steals keyboard focus from the address bar. Reclaim it for
-      // the chrome so the cursor lands in the omnibox (Chrome-style). Retry
-      // once — some pages focus a tick after load.
+      // A blank new tab's home page autofocuses its own inputs (Gemini keeps
+      // doing it during hydration). Reclaim once at load; the focus guard
+      // below handles every later steal event-driven.
       if (tab.blank && isActiveTab()) {
         this.focusChrome(ws)
-        setTimeout(() => {
-          if (tab.blank && isActiveTab()) this.focusChrome(ws)
-        }, 300)
+        void wc.executeJavaScript(PAGE_ENGAGED_SCRIPT, true).catch(() => {})
       }
+    })
+
+    // Focus guard for blank new tabs: whenever the page grabs keyboard focus
+    // and the user hasn't clicked into it, take it straight back. Deferred a
+    // beat so a genuine click (mousedown sentinel → engaged) wins instead of
+    // getting bounced. Event-driven — no keystrokes leak into the page while
+    // you type in the address bar, no matter how often the page re-focuses.
+    wc.on('focus', () => {
+      if (!tab.blank || tab.engaged || !isActiveTab()) return
+      setTimeout(() => {
+        if (tab.blank && !tab.engaged && isActiveTab() && !ws.win.isDestroyed()) {
+          this.focusChrome(ws)
+        }
+      }, 60)
     })
 
     // Audio playing/stopped → speaker indicators in the tab strip + app rail.
@@ -881,6 +901,10 @@ export class AccountManager implements ExtensionTabDelegate {
 
     // Clicking one of this tab's notifications switches to this account + tab.
     wc.on('console-message', (_e, _level, message) => {
+      if (message === PAGE_ENGAGED_SENTINEL) {
+        tab.engaged = true
+        return
+      }
       if (message !== NOTIFICATION_CLICK_SENTINEL) return
       this.accountState(ws, accountId).activeTabId = tab.id
       this.setActiveWs(ws, accountId)

@@ -394,6 +394,24 @@ receive a mail there, click the banner → Glide focuses and switches to B.
   account web view has focus. Copy/paste still work inside the web views.
 
 ## Phase log
+- **Fix — ✅ New-tab focus guard: event-driven, beats focus-stealing pages.**
+  The timed reclaim (load + one 300ms retry) lost to Gemini's hydration —
+  keystrokes meant for the address bar landed in the page's input. Replaced
+  with a **focus guard**: while a tab is `blank` and the user hasn't clicked
+  into the page, every `focus` event on the page's webContents triggers a
+  reclaim (deferred 60ms so a genuine click wins). **Disarm signal**: a
+  `mousedown` in the page logs `__FLIT_PAGE_ENGAGED__` (same console-sentinel
+  pattern as notification clicks, injected only while blank, capture+once) →
+  `tab.engaged = true` → the page keeps focus from then on, so using Gemini
+  is one ordinary click. Guard ends naturally when the tab navigates
+  (`blank` clears). Verified by wiring test (OS key-window status
+  unavailable in the harness this run): synthetic page-focus while armed →
+  `menu:focus-address` reclaim fires; after the engaged sentinel → same
+  focus event ignored. guard + build + smoke (×2) + isolation pass. Manual
+  check (the real proof): new tab with Gemini as the new-tab page, type
+  immediately and repeatedly — nothing should leak into the Gemini box. If
+  any still does, fallback is an empty new-tab state (small change, offer as
+  a pref).
 - **Polish — ✅ Chrome-style bottom-left link readout + full-width URL bar.**
   (1) Hovered-link URLs now show in a **status bubble at the content's
   bottom-left**, replacing the top-bar right-aligned readout. Phase 24 called
